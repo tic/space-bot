@@ -1,4 +1,6 @@
+console.log('[ENV] Loading environment variables');
 require('dotenv').config();
+console.log('[ENV] Loading CRON functions');
 const { getWeather, getNOTAMs, getClosures } = require('./crons/loader');
 const moment = require('moment');
 
@@ -10,6 +12,7 @@ function time() {
     return new Date().toLocaleTimeString("en-US", {hour12: false, day: "2-digit", month: "2-digit"})
 }
 
+console.log('[ENV] Loading database functions')
 const { Mongo, EnterMongo, ExitMongo } = require('./mongo');
 // Weather is unconditionally updated!
 async function updateWeather() {
@@ -27,7 +30,7 @@ async function updateWeather() {
     console.log(`[${time()}] [MAIN] Weather update complete.`);
 }
 // Update callbacks are executed only if there is something to report
-async function updateNOTAMs() {
+async function updateNOTAMs(skipTopicUpdate) {
     let notams = await getNOTAMs();
     await EnterMongo();
 
@@ -38,7 +41,7 @@ async function updateNOTAMs() {
         notam.stop = notam.stop.format();
         let result = await collection.findOneAndUpdate({id: notam.id}, {$set: notam}, {upsert: true});
         if(result.value) delete result.value._id;
-        else result.value = {}
+        else result.value = {};
         if(!result.lastErrorObject.updatedExisting || JSON.stringify(notam) !== JSON.stringify(result.value)) {
             // There was a change!
             postUpdate({
@@ -51,13 +54,16 @@ async function updateNOTAMs() {
     }
 
     await ExitMongo();
-    for(let i = 0; i < UPDATE_CHANNELS.notam.length; i++) {
-        await SpaceBot.channels.cache.get(UPDATE_CHANNELS.notam[i]).setTopic(`${CHANNEL_TOPICS['notam']} | Updated at ${moment().format('HH:mm')} EST`);
-        await new Promise((resolve, _) => setTimeout(resolve, 1000));
+    if(!skipTopicUpdate) {
+        await new Promise((resolve, _) => setTimeout(resolve, 2000));
+        for(let i = 0; i < UPDATE_CHANNELS.notam.length; i++) {
+            await SpaceBot.channels.cache.get(UPDATE_CHANNELS.notam[i]).setTopic(`${CHANNEL_TOPICS['notam']} | Updated at ${moment().format('HH:mm')} EST`);
+            await new Promise((resolve, _) => setTimeout(resolve, 1000));
+        }
     }
     console.log(`[${time()}] [MAIN] NOTAM update complete.`);
 }
-async function updateClosures() {
+async function updateClosures(skipTopicUpdate) {
     let closures = await getClosures();
     await EnterMongo();
 
@@ -81,13 +87,17 @@ async function updateClosures() {
         }
     }
     await ExitMongo();
-    for(let i = 0; i < UPDATE_CHANNELS.closure.length; i++) {
-        await SpaceBot.channels.cache.get(UPDATE_CHANNELS.closure[i]).setTopic(`${CHANNEL_TOPICS['closure']} | Updated at ${moment().format('HH:mm')} EST`);
-        await new Promise((resolve, _) => setTimeout(resolve, 1000));
+    if(!skipTopicUpdate) {
+        await new Promise((resolve, _) => setTimeout(resolve, 2000));
+        for(let i = 0; i < UPDATE_CHANNELS.closure.length; i++) {
+            await SpaceBot.channels.cache.get(UPDATE_CHANNELS.closure[i]).setTopic(`${CHANNEL_TOPICS['closure']} | Updated at ${moment().format('HH:mm')} EST`);
+            await new Promise((resolve, _) => setTimeout(resolve, 1000));
+        }
     }
     console.log(`[${time()}] [MAIN] Closure update complete.`);
 }
 
+console.log('[ENV] Loading discord bot');
 const { SpaceBot, UPDATE_CHANNELS, CHANNEL_TOPICS } = require('./bot');
 SpaceBot.on("ready", () => {
     console.log(`[${time()}] [MAIN] Running initial updates`);
@@ -95,8 +105,9 @@ SpaceBot.on("ready", () => {
     // During development, doing this on every restart produces an unnecessary
     // amount of message spam in Discord. :(
     // updateWeather();
-    updateNOTAMs();
-    updateClosures();
+    setTimeout(() => updateNOTAMs(true), 1000);
+    setTimeout(() => updateClosures(true), 3000);
+    // Channel topics won't change the "updated at __:__" on the first run
 });
 
 async function postUpdate({type, old: old_data, new: new_data}) {
@@ -121,7 +132,9 @@ async function postUpdate({type, old: old_data, new: new_data}) {
     }
 }
 
+console.log('[ENV] Loading web server files');
 const { WebServer } = require('./server');
+console.log(`[${time()}] [HTTP] Launching web server...`);
 WebServer.listen(process.env.PORT, err => {
     if(err) {
         console.log(`[${time()}] [HTTP] !! Failed to start webserver on port ${process.env.PORT}.\n${err}`);
@@ -136,7 +149,7 @@ var WEATHER_INTERVAL = setInterval(() => {
 }, WEATHER_DELAY);
 var NOTAM_INTERVAL = setInterval(() => {
     console.log(`[${time()}] [CRON] Starting NOTAM update...`);
-    updateNOTAMs()
+    updateNOTAMs();
 }, NOTAM_DELAY);
 var CLOSURE_INTERVAL = setInterval(() => {
     console.log(`[${time()}] [CRON] Starting closure update...`);

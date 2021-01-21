@@ -1,11 +1,13 @@
 const Discord = require('discord.js');
 const moment = require('moment');
 var SpaceBot = new Discord.Client();
-SpaceBot.login(process.env.DISCSEC);
 
 function time() {
     return new Date().toLocaleTimeString("en-US", {hour12: false, day: "2-digit", month: "2-digit"})
 }
+
+console.log(`[${time()}] [DISC] Logging in as ${process.env.DISCUSR}...`)
+SpaceBot.login(process.env.DISCSEC);
 
 var min = 0;
 function count() {

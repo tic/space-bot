@@ -7,13 +7,11 @@ const { WEATHER, NOTAMS, NOTAMBASE, CLOSURES } = process.env;
 async function getWeather() {
     return await (await fetch(WEATHER)).json();
 }
-
 function getNOTAMURL(id) {
     return `${NOTAMBASE}/save_pages/detail_${id.replace('/', '_')}.html`;
 }
-
 async function getNOTAMs() {
-    const content = await (await fetch(NOTAMS)).text();
+    const content = await (await fetch(NOTAMS, {method: 'POST'})).text();
     const soup = new JSSoup(content);
     let [ notam_table ] = soup.findAll('table')
         .filter(({attrs: {width}}) => width == 970);
@@ -84,7 +82,6 @@ async function getNOTAMs() {
 
     return notams;
 }
-
 async function getClosures() {
     const content = await (await fetch(CLOSURES)).text();
     const soup = new JSSoup(content);
@@ -125,9 +122,8 @@ async function getClosures() {
 
     return closures;
 }
-
 async function getLaunches() {
-
+    
 }
 
 module.exports = {
