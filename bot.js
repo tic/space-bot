@@ -3,6 +3,10 @@ const moment = require('moment');
 var SpaceBot = new Discord.Client();
 SpaceBot.login(process.env.DISCSEC);
 
+function time() {
+    return new Date().toLocaleTimeString("en-US", {hour12: false, day: "2-digit", month: "2-digit"})
+}
+
 var min = 0;
 function count() {
     min += 1;
@@ -25,13 +29,18 @@ var UPDATE_CHANNELS = {
         '801553695560564756',
     ]
 }
+var CHANNEL_TOPICS = {
+    closure: '__**Road closure info auto-posted by SpaceBot.**__',
+    notam: '__**NOTAM info auto-posted by SpaceBot.**__',
+    launch: 'The latest launch data, auto-posted by SpaceBot.',
+}
 
 SpaceBot.on("ready", () => {
-    console.log(`[DISC] ${process.env.DISCUSR} logged in.`);
+    console.log(`[${time()}] [DISC] ${process.env.DISCUSR} logged in.`);
     setInterval(count, 60000);
 });
 SpaceBot.on("error", err => {
-    console.log(`[DISC] !! Error in discord bot:`);
+    console.log(`[${time()}] [DISC] !! Error in discord bot:`);
     console.warn(err);
 });
 
@@ -40,22 +49,22 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
     var chans = UPDATE_CHANNELS[type];
     if(type === 'notam') {
         if(JSON.stringify(old_data) === '{}') {
-            const msg = `__**NEW**__: TFR posted:\n> NOTAM ID: ${new_data.id}\n> Start: \`${moment(new_data.start).format('M-DD, HH:mm')}\`\n> End: \`${moment(new_data.stop).format('M-DD, HH:mm')}\`\n> Altitude: \`${new_data.altitude} ${new_data.altitude === 'Unlimited' ? '' : 'feet MSL'}\`\n${new_data.link}`;
+            const msg = `__**NEW**__: TFR posted:\n> NOTAM ID: ${new_data.id}\n> Start: \`${moment(new_data.start).format('M-DD, HH:mm')} EST\`\n> End: \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\`\n> Altitude: \`${new_data.altitude} ${new_data.altitude === 'Unlimited' ? '' : 'feet MSL'}\`\n${new_data.link}`;
             for(let i = 0; i < chans.length; i++) {
-                SpaceBot.sendMessage(chans[i], msg);
+                await SpaceBot.sendMessage(chans[i], msg);
                 await new Promise((resolve, _) => setTimeout(resolve, 1000));
             }
         } else {
             const msg = [
                 "**UPDATE**: TFR has been modified: ",
                 `> NOTAM ID: ${new_data.id}`,
-                old_data.start === new_data.start ? `> Start: ${moment(new_data.start).format('M-DD, HH:mm')}` : `> Start: \`~~${moment(old_data.start).format('M-DD, HH:mm')}~~ ${moment(new_data.start).format('M-DD, HH:mm')}\``,
-                old_data.stop === new_data.stop ? `> End: ${moment(new_data.stop).format('M-DD, HH:mm')}` : `> End: \`~~${moment(old_data.stop).format('M-DD, HH:mm')}~~ \`${moment(new_data.stop).format('M-DD, HH:mm')}\``,
+                old_data.start === new_data.start ? `> Start: ${moment(new_data.start).format('M-DD, HH:mm')}` : `> Start: \`~~${moment(old_data.start).format('M-DD, HH:mm')}~~ ${moment(new_data.start).format('M-DD, HH:mm')} EST\``,
+                old_data.stop === new_data.stop ? `> End: ${moment(new_data.stop).format('M-DD, HH:mm')} EST` : `> End: \`~~${moment(old_data.stop).format('M-DD, HH:mm')}~~ \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\``,
                 old_data.altitude === new_data.altitude ? `> Altitude: ${new_data.altitude}` : `> Altitude: \`~~${old_data.altitude}~~ ${new_data.altitude}\``,
                 new_data.link,
             ].join('\n');
             for(let i = 0; i < chans.length; i++) {
-                SpaceBot.sendMessage(chans[i], msg);
+                await SpaceBot.sendMessage(chans[i], msg);
                 await new Promise((resolve, _) => setTimeout(resolve, 1000));
             }
         }
@@ -63,7 +72,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         if(JSON.stringify(old_data) === '{}') {
             const msg = `__**NEW**__: Closure posted:\n> Day: ${moment(new_data.day, 'YYYY-MM-DD').format('ddd M-DD')}\n> Start: \`${moment(new_data.start).format('HH:mm')}\`\n> End: \`${moment(new_data.stop).format('HH:mm')}\`\n> Type: ${new_data.type}\n> Status: ${new_data.status}`;
             for(let i = 0; i < chans.length; i++) {
-                SpaceBot.sendMessage(chans[i], msg);
+                await SpaceBot.sendMessage(chans[i], msg);
                 await new Promise((resolve, _) => setTimeout(resolve, 1000));
             }
         } else {
@@ -76,7 +85,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 old_data.status === new_data.status ? `> Status: ${new_data.status}` : `> Status: ~~${old_data.status}~~ ${new_data.status}`
             ].join('\n');
             for(let i = 0; i < chans.length; i++) {
-                SpaceBot.sendMessage(chans[i], msg);
+                await SpaceBot.sendMessage(chans[i], msg);
                 await new Promise((resolve, _) => setTimeout(resolve, 1000));
             }
         }
@@ -97,7 +106,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         ].join('\n');
         for(let i = 0; i < chans.length; i++) {
             if(chans[i].edit) (await SpaceBot.channels.cache.get(chans[i].channel).messages.fetch(chans[i].id)).edit(msg);
-            else SpaceBot.sendMessage(chans[i].channel, msg);
+            else await SpaceBot.sendMessage(chans[i].channel, msg);
             await new Promise((resolve, _) => setTimeout(resolve, 1000));
         }
     }
@@ -105,4 +114,6 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
 
 module.exports = {
     SpaceBot,
+    UPDATE_CHANNELS,
+    CHANNEL_TOPICS,
 }

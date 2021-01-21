@@ -1,9 +1,14 @@
 require('dotenv').config();
 const { getWeather, getNOTAMs, getClosures } = require('./crons/loader');
+const moment = require('moment');
 
 var WEATHER_DELAY = 11 * 60 * 1000;
 var NOTAM_DELAY = 31 * 60 * 1000;
 var CLOSURE_DELAY = 29 * 60 * 1000;
+
+function time() {
+    return new Date().toLocaleTimeString("en-US", {hour12: false, day: "2-digit", month: "2-digit"})
+}
 
 const { Mongo, EnterMongo, ExitMongo } = require('./mongo');
 // Weather is unconditionally updated!
@@ -19,7 +24,7 @@ async function updateWeather() {
         new: weather
     });
     await ExitMongo();
-    console.log(`[MAIN] Weather update complete.`);
+    console.log(`[${time()}] [MAIN] Weather update complete.`);
 }
 // Update callbacks are executed only if there is something to report
 async function updateNOTAMs() {
@@ -46,7 +51,11 @@ async function updateNOTAMs() {
     }
 
     await ExitMongo();
-    console.log(`[MAIN] NOTAM update complete.`);
+    for(let i = 0; i < UPDATE_CHANNELS.notam.length; i++) {
+        await SpaceBot.channels.cache.get(UPDATE_CHANNELS.notam[i]).setTopic(`${CHANNEL_TOPICS['notam']} | Updated at ${moment().format('HH:mm')} EST`);
+        await new Promise((resolve, _) => setTimeout(resolve, 1000));
+    }
+    console.log(`[${time()}] [MAIN] NOTAM update complete.`);
 }
 async function updateClosures() {
     let closures = await getClosures();
@@ -72,13 +81,20 @@ async function updateClosures() {
         }
     }
     await ExitMongo();
-    console.log(`[MAIN] Closure update complete.`);
+    for(let i = 0; i < UPDATE_CHANNELS.closure.length; i++) {
+        await SpaceBot.channels.cache.get(UPDATE_CHANNELS.closure[i]).setTopic(`${CHANNEL_TOPICS['closure']} | Updated at ${moment().format('HH:mm')} EST`);
+        await new Promise((resolve, _) => setTimeout(resolve, 1000));
+    }
+    console.log(`[${time()}] [MAIN] Closure update complete.`);
 }
 
-const { SpaceBot } = require('./bot');
+const { SpaceBot, UPDATE_CHANNELS, CHANNEL_TOPICS } = require('./bot');
 SpaceBot.on("ready", () => {
-    console.log(`[MAIN] Running initial updates`);
-    updateWeather();
+    console.log(`[${time()}] [MAIN] Running initial updates`);
+    // Weather updates often enough to skip it on the initial iteration.
+    // During development, doing this on every restart produces an unnecessary
+    // amount of message spam in Discord. :(
+    // updateWeather();
     updateNOTAMs();
     updateClosures();
 });
@@ -108,21 +124,21 @@ async function postUpdate({type, old: old_data, new: new_data}) {
 const { WebServer } = require('./server');
 WebServer.listen(process.env.PORT, err => {
     if(err) {
-        console.log(`[HTTP] !! Failed to start webserver on port ${process.env.PORT}.\n${err}`);
+        console.log(`[${time()}] [HTTP] !! Failed to start webserver on port ${process.env.PORT}.\n${err}`);
         return;
     }
-    console.log(`[HTTP] Web server started on port ${process.env.PORT}`);
+    console.log(`[${time()}] [HTTP] Web server started on port ${process.env.PORT}`);
 });
 
 var WEATHER_INTERVAL = setInterval(() => {
-    console.log('[CRON] Starting weather update...');
+    console.log(`[${time()}] [CRON] Starting weather update...`);
     updateWeather();
 }, WEATHER_DELAY);
 var NOTAM_INTERVAL = setInterval(() => {
-    console.log('[CRON] Starting NOTAM update...');
+    console.log(`[${time()}] [CRON] Starting NOTAM update...`);
     updateNOTAMs()
 }, NOTAM_DELAY);
 var CLOSURE_INTERVAL = setInterval(() => {
-    console.log('[CRON] Starting closure update...');
+    console.log(`[${time()}] [CRON] Starting closure update...`);
     updateClosures();
 }, CLOSURE_DELAY);

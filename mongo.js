@@ -7,9 +7,14 @@ const Mongo = new mongo.MongoClient(
         useUnifiedTopology: true,
     }
 );
+
+function time() {
+    return new Date().toLocaleTimeString("en-US", {hour12: false, day: "2-digit", month: "2-digit"})
+}
+
 Mongo.connect(err => {
-    if(err) console.log(`[MNGO] !! Failed to establish database connection.`);
-    else console.log(`[MNGO] Connected.`)
+    if(err) console.log(`[${time()}] [MNGO] !! Failed to establish database connection.`);
+    else console.log(`[${time()}] [MNGO] Connected.`)
 });
 
 var mongoRelease = () => null;
