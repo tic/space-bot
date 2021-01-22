@@ -2,7 +2,25 @@ const fetch = require('node-fetch');
 const JSSoup = require('jssoup').default;
 const moment = require('moment');
 require('moment-timezone');
-const { WEATHER, NOTAMS, NOTAMBASE, CLOSURES } = process.env;
+const he = require('he');
+const { WEATHER, NOTAMS, NOTAMBASE, CLOSURES, LAUNCHES } = process.env;
+const AFFILIATIONS = [
+    { tag: 'Rocket Lab', group: 'RocketLab' },
+    { tag: 'SpaceX', group: 'SpaceX' },
+    { tag: 'Russia', group: 'Russia' },
+    { tag: 'Northrop Grumman', group: 'NG' },
+    { tag: 'United Launch Alliance', group: 'ULA' },
+    { tag: 'India', group: 'India' },
+    { tag: 'Arianespace', group: 'Arianespace' },
+    { tag: 'U.S. Air Force', group: 'USAF' },
+    { tag: 'USAF', group: 'USAF' },
+    { tag: 'U.S. Space Force', group: 'USSF' },
+    { tag: 'USSF', group: 'USSF' },
+    { tag: 'Astra', group: 'Astra' },
+    { tag: 'Japanese', group: 'Japan' },
+    { tag: 'Japan', group: 'Japan' },
+    { tag: 'International Space Station', group: 'ISS' },
+];
 
 async function getWeather() {
     return await (await fetch(WEATHER)).json();
@@ -18,8 +36,11 @@ async function getNOTAMs() {
     let notams = notam_table.findAll('tr')
         .filter(({attrs: {valign, height}}) => valign === "top" && height == 40)
         .map(async tr => {
+            // Checks that cell.find('a') actually finds something, since NOTAMs which lack
+            // a zoom-in button also lack an <a> tag in their last column, which would cause
+            // the string conversion two lines below to fail otherwise.
             let [posted, notam_id, facility, state, type, description] = tr.findAll('td')
-                .map(cell => cell.find('a').contents.toString());
+                .map(cell => cell.find('a') ? cell.find('a').contents.toString() : '');
             if(type !== "SPACE OPERATIONS") return null;
 
             notam_id = (new JSSoup(notam_id)).find('u').contents.toString()
@@ -122,8 +143,53 @@ async function getClosures() {
 
     return closures;
 }
+function getAffiliations(description) {
+    return [...new Set(AFFILIATIONS
+        .filter(({tag}) => description.indexOf(tag) > -1)
+        .map(({group}) => group))];
+}
 async function getLaunches() {
-    
+    const content = await (await fetch(LAUNCHES)).text();
+    const soup = new JSSoup(content);
+    let launch_container = soup.find('article')
+        .nextElement
+        .findNextSibling();
+
+    let mission_pieces = launch_container.findAll('div');
+    let launches = [];
+    for(let i = 0; i < mission_pieces.length - 2; i += 3) {
+        // Date + vehicle + mission are in the first block
+        let [ date, vmiss ] = mission_pieces[i].findAll('span')
+            .map(_ => he.decode(_.contents.toString()));
+        let [ vehicle, mission ] = vmiss.split(' • ');
+
+        // Window + site are in the second block
+        let [ launch_win, launch_site ] = mission_pieces[i + 1].findAll('span');
+        launch_win = launch_win.nextElement.nextElement.toString().trim();
+        launch_site = launch_site.nextElement.nextElement.nextElement.toString().trim();
+
+        // Affiliation + description are in the third block
+        let description = mission_pieces[i + 2].nextElement.toString();
+        let desc2 = mission_pieces[i + 2].nextElement.nextElement.nextElement;
+        if(desc2._text) {
+            description += desc2._text;
+            description += desc2.nextElement._text;
+        }
+        description = he.decode(description);
+
+        let affiliations = getAffiliations(description);
+
+        launches.push({
+            mission,
+            affiliations,
+            date,
+            description,
+            launch_site,
+            vehicle,
+            window: launch_win,
+        });
+    }
+    return launches;
 }
 
 module.exports = {

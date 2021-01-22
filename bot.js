@@ -17,7 +17,7 @@ function count() {
 }
 
 var UPDATE_CHANNELS = {
-    launches: [
+    launch: [
         '800875584632258610',
     ],
     notam: [
@@ -25,7 +25,7 @@ var UPDATE_CHANNELS = {
     ], // Weather is formatted differently!
     weather: [
         {channel: '801319649601257503', id: '801613956631494676', edit: true},
-        {channel: '801319696266952714', edit: false}
+        // {channel: '801319696266952714', edit: false}
     ],
     closure: [
         '801553695560564756',
@@ -34,7 +34,24 @@ var UPDATE_CHANNELS = {
 var CHANNEL_TOPICS = {
     closure: '__**Road closure info auto-posted by SpaceBot.**__',
     notam: '__**NOTAM info auto-posted by SpaceBot.**__',
-    launch: 'The latest launch data, auto-posted by SpaceBot.',
+    launch: '__**Space Launch into auto-posted by SpaceBot.**__',
+}
+var ROLES = {
+    Launch: '801994532970561576',
+    Closure: '801994581423554561',
+    TFR: '801994587790639174',
+    RocketLab: '801993945336905768',
+    SpaceX: '801993942198386760',
+    Russia: '801993940415938593',
+    NG: '801993937535107122',
+    ULA: '801993934808678412',
+    India: '801993933311574016',
+    Arianespace: '801993931276550155',
+    USAF: '801993929154756689',
+    USSF: '801993926818398249',
+    Astra: '801993924142563369',
+    Japan: '801993917553836093',
+    ISS: '801993915170947072',
 }
 
 SpaceBot.on("ready", () => {
@@ -51,45 +68,39 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
     var chans = UPDATE_CHANNELS[type];
     if(type === 'notam') {
         if(JSON.stringify(old_data) === '{}') {
-            const msg = `__**NEW**__: TFR posted:\n> NOTAM ID: ${new_data.id}\n> Start: \`${moment(new_data.start).format('M-DD, HH:mm')} EST\`\n> End: \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\`\n> Altitude: \`${new_data.altitude} ${new_data.altitude === 'Unlimited' ? '' : 'feet MSL'}\`\n${new_data.link}`;
-            for(let i = 0; i < chans.length; i++) {
-                await SpaceBot.sendMessage(chans[i], msg);
-                await new Promise((resolve, _) => setTimeout(resolve, 1000));
-            }
+            var msg = `__**NEW**__: <@&${ROLES['TFR']}> posted:\n> NOTAM: ${new_data.id}\n> Start: \`${moment(new_data.start).format('M-DD, HH:mm')} EST\`\n> End: \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\`\n> Altitude: \`${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}\`\n${new_data.link}`;
+        } else if(JSON.stringify(new_data) === '{}') {
+            var msg = `__**RECALLED**__: <@&${ROLES['TFR']}> has been revoked:\n> NOTAM: ${old_data.id}\n> Start: ~~\`${moment(old_data.start).format('M-DD, HH:mm')} EST\`~~\n> End: ~~\`${moment(old_data.stop).format('M-DD, HH:mm')} EST\`~~\n> Altitude: ~~\`${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}\`~~`;
         } else {
-            const msg = [
-                "**UPDATE**: TFR has been modified: ",
-                `> NOTAM ID: ${new_data.id}`,
+            var msg = [
+                `**UPDATE**: <@&${ROLES['TFR']}> has been modified:`,
+                `> NOTAM: ${new_data.id}`,
                 old_data.start === new_data.start ? `> Start: ${moment(new_data.start).format('M-DD, HH:mm')}` : `> Start: \`~~${moment(old_data.start).format('M-DD, HH:mm')}~~ ${moment(new_data.start).format('M-DD, HH:mm')} EST\``,
                 old_data.stop === new_data.stop ? `> End: ${moment(new_data.stop).format('M-DD, HH:mm')} EST` : `> End: \`~~${moment(old_data.stop).format('M-DD, HH:mm')}~~ \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\``,
                 old_data.altitude === new_data.altitude ? `> Altitude: ${new_data.altitude}` : `> Altitude: \`~~${old_data.altitude}~~ ${new_data.altitude}\``,
                 new_data.link,
             ].join('\n');
-            for(let i = 0; i < chans.length; i++) {
-                await SpaceBot.sendMessage(chans[i], msg);
-                await new Promise((resolve, _) => setTimeout(resolve, 1000));
-            }
+        }
+        for(let i = 0; i < chans.length; i++) {
+            await SpaceBot.sendMessage(chans[i], msg);
+            await new Promise((resolve, _) => setTimeout(resolve, 1000));
         }
     } else if(type === 'closure') {
         if(JSON.stringify(old_data) === '{}') {
-            const msg = `__**NEW**__: Closure posted:\n> Day: ${moment(new_data.day, 'YYYY-MM-DD').format('ddd M-DD')}\n> Start: \`${moment(new_data.start).format('HH:mm')}\`\n> End: \`${moment(new_data.stop).format('HH:mm')}\`\n> Type: ${new_data.type}\n> Status: ${new_data.status}`;
-            for(let i = 0; i < chans.length; i++) {
-                await SpaceBot.sendMessage(chans[i], msg);
-                await new Promise((resolve, _) => setTimeout(resolve, 1000));
-            }
+            var msg = `__**NEW**__: <@&${ROLES['Closure']}> posted:\n> Day: ${moment(new_data.day, 'YYYY-MM-DD').format('ddd M-DD')}\n> Start: \`${moment(new_data.start).format('HH:mm')}\`\n> End: \`${moment(new_data.stop).format('HH:mm')}\`\n> Type: ${new_data.type}\n> Status: ${new_data.status}`;
         } else {
-            const msg = [
-                "**UPDATE**: Closure has been modified: ",
+            var msg = [
+                `**UPDATE**: <@&${ROLES['Closure']}> has been modified:`,
                 `> Day: ${moment(new_data.day, 'YYYY-MM-DD').format('ddd M-DD')}`,
                 old_data.start === new_data.start ? `> Start: \`${moment(new_data.start).format('HH:mm')}\`` : `> Start: \`~~${moment(old_data.start).format('HH:mm')}~~ ${moment(new_data.start).format('HH:mm')}\``,
                 old_data.stop === new_data.stop ? `> End: \`${moment(new_data.stop).format('HH:mm')}\`` : `> End: \`~~${moment(old_data.stop).format('HH:mm')}~~ ${moment(new_data.stop).format('HH:mm')}\``,
                 old_data.type === new_data.type ? `> Type: ${new_data.type}` : `> Type: ~~${old_data.type}~~ ${new_data.type}`,
                 old_data.status === new_data.status ? `> Status: ${new_data.status}` : `> Status: ~~${old_data.status}~~ ${new_data.status}`
             ].join('\n');
-            for(let i = 0; i < chans.length; i++) {
-                await SpaceBot.sendMessage(chans[i], msg);
-                await new Promise((resolve, _) => setTimeout(resolve, 1000));
-            }
+        }
+        for(let i = 0; i < chans.length; i++) {
+            await SpaceBot.sendMessage(chans[i], msg);
+            await new Promise((resolve, _) => setTimeout(resolve, 1000));
         }
     } else if(type === 'weather') {
         let windDir = new_data.windDirection;
@@ -110,6 +121,36 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             if(chans[i].edit) (await SpaceBot.channels.cache.get(chans[i].channel).messages.fetch(chans[i].id)).edit(msg);
             else await SpaceBot.sendMessage(chans[i].channel, msg);
             await new Promise((resolve, _) => setTimeout(resolve, 1000));
+        }
+    } else if(type === 'launch') {
+        if(JSON.stringify(old_data) === '{}') {
+            var msg = [
+                `__**NEW**__: <@&${ROLES['Launch']}> posted:`,
+                `> ${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`,
+                `> Mission: ${new_data.mission}`,
+                `> Vehicle: ${new_data.vehicle}`,
+                `> Target date: ${new_data.date}`,
+                `> Launch window: ${new_data.window}`,
+                `> Launch site: ${new_data.launch_site}`,
+                `> Mission description:`,
+                new_data.description
+            ].join('\n');
+        } else {
+            var msg = [
+                `**UPDATE**: <@&${ROLES['Launch']}> has been modified:`,
+                `> ${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`,
+                `> Mission: ${new_data.mission}`,
+                `> Vehicle: ${new_data.vehicle}`,
+                old_data.date === new_data.date ? `> Target date: ${new_data.date}` : `> **Target date: ${new_data.date}**`,
+                old_data.window === new_data.window ? `> Launch window: ${new_data.window}` : `> **Launch window: ${new_data.window}**`,
+                old_data.site === new_data.site ? `> Launch site: ${new_data.launch_site}` : `> **Launch site: **${new_data.launch_site}**`,
+                `> Mission description`,
+                new_data.description
+            ].join('\n');
+        }
+        for(let i = 0; i < chans.length; i++) {
+            await SpaceBot.sendMessage(chans[i], msg);
+            await new Promise((resolve, _) => setTimeout(resolve, 2000));
         }
     }
 }
