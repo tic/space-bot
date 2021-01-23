@@ -137,7 +137,7 @@ async function getClosures() {
             start: m_start,
             status: status.toString(),
             stop: m_stop,
-            type: type.toString(),
+            type: type.toString().replace(',<br />,\n', ' '),
         };
     });
 

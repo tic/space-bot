@@ -92,8 +92,8 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             var msg = [
                 `**UPDATE**: <@&${ROLES['Closure']}> has been modified:`,
                 `> Day: ${moment(new_data.day, 'YYYY-MM-DD').format('ddd M-DD')}`,
-                old_data.start === new_data.start ? `> Start: \`${moment(new_data.start).format('HH:mm')}\`` : `> Start: \`~~${moment(old_data.start).format('HH:mm')}~~ ${moment(new_data.start).format('HH:mm')}\``,
-                old_data.stop === new_data.stop ? `> End: \`${moment(new_data.stop).format('HH:mm')}\`` : `> End: \`~~${moment(old_data.stop).format('HH:mm')}~~ ${moment(new_data.stop).format('HH:mm')}\``,
+                old_data.start === new_data.start ? `> Start: \`${moment(new_data.start).format('HH:mm')}\`` : `> Start: ~~\`${moment(old_data.start).format('HH:mm')}\`~~\` ${moment(new_data.start).format('HH:mm')}\``,
+                old_data.stop === new_data.stop ? `> End: \`${moment(new_data.stop).format('HH:mm')}\`` : `> End: ~~\`${moment(old_data.stop).format('HH:mm')}\`~~\` ${moment(new_data.stop).format('HH:mm')}\``,
                 old_data.type === new_data.type ? `> Type: ${new_data.type}` : `> Type: ~~${old_data.type}~~ ${new_data.type}`,
                 old_data.status === new_data.status ? `> Status: ${new_data.status}` : `> Status: ~~${old_data.status}~~ ${new_data.status}`
             ].join('\n');

@@ -154,7 +154,7 @@ async function updateLaunches(skipTopicUpdate) {
             await new Promise((resolve, _) => setTimeout(resolve, 1000));
         }
     }
-    // await ExitMongo();
+    await ExitMongo();
     if(!skipTopicUpdate) {
         await new Promise((resolve, _) => setTimeout(resolve, 2000));
         for(let i = 0; i < UPDATE_CHANNELS.closure.length; i++) {
@@ -175,7 +175,7 @@ SpaceBot.on("ready", () => {
     // updateWeather();
     setTimeout(() => updateNOTAMs(true), 1000);
     setTimeout(() => updateClosures(true), 6000);
-    setTimeout(() => updateLaunches(), 11000);
+    setTimeout(() => updateLaunches(true), 11000);
     // Channel topics won't change the "updated at __:__" on the first run
 });
 
