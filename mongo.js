@@ -1,10 +1,11 @@
 const mongo = require('mongodb');
 const Semaphore = new (require('async-mutex').Semaphore)(1);
 const Mongo = new mongo.MongoClient(
-    `mongodb+srv://${process.env.MUSR}:${process.env.MPAS}@${process.env.MURL}/<dbname>?retryWrites=true&w=majority`,
+    `mongodb+srv://${process.env.MUSR}:${process.env.MPAS}@${process.env.MURL}/launches?retryWrites=true&w=majority`,
     {
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000,
     }
 );
 
@@ -14,7 +15,7 @@ function time() {
 
 Mongo.connect(err => {
     if(err) console.log(`[${time()}] [MNGO] !! Failed to establish database connection.`);
-    else console.log(`[${time()}] [MNGO] Connected.`)
+    else console.log(`[${time()}] [MNGO] Connected.`);
 });
 
 var mongoRelease = () => null;
