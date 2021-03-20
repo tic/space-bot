@@ -9,10 +9,10 @@ const moment = require('moment');
 // launch update will happen at 11:00, then just before 11:59,
 // then just before 12:58, and so on. Over the course of several
 // update periods, the trigger time rotates around the clock.
-var WEATHER_DELAY = 11 * 60 * 1000 - 1000;  // Every 10 minutes, 59 seconds
-var NOTAM_DELAY = 23 * 60 * 1000 - 1000;    // Every 22 minutes, 59 seconds
-var CLOSURE_DELAY = 19 * 60 * 1000 - 1000;  // Every 18 minutes, 59 seconds
-var LAUNCH_DELAY = 59 * 60 * 1000 - 1000;   // Every 58 minutes, 59 seconds
+var WEATHER_DELAY = 3 * 60 * 1000 - 1000;  // Every 2 minutes, 59 seconds
+var NOTAM_DELAY = 3 * 60 * 1000 - 1000;    // Every 2 minutes, 59 seconds
+var CLOSURE_DELAY = 3 * 60 * 1000 - 1000;  // Every 2 minutes, 59 seconds
+var LAUNCH_DELAY = 7 * 60 * 1000 - 1000;   // Every 6 minutes, 59 seconds
 
 function time() {
     return new Date().toLocaleTimeString("en-US", {hour12: false, day: "2-digit", month: "2-digit"})
@@ -92,16 +92,17 @@ async function updateNOTAMs(skipTopicUpdate) {
     }
 
     await ExitMongo();
-    if(!skipTopicUpdate) {
-        await new Promise((resolve, _) => setTimeout(resolve, 2000));
-        for(let i = 0; i < UPDATE_CHANNELS.notam.length; i++) {
-            await SpaceBot.channels.cache.get(UPDATE_CHANNELS.notam[i]).setTopic(`${CHANNEL_TOPICS['notam']} | Updated at ${moment().format('HH:mm')} EST`);
-            await new Promise((resolve, _) => setTimeout(resolve, 1000));
-        }
-    }
+    // if(!skipTopicUpdate) {
+    //     await new Promise((resolve, _) => setTimeout(resolve, 2000));
+    //     for(let i = 0; i < UPDATE_CHANNELS.notam.length; i++) {
+    //         await SpaceBot.channels.cache.get(UPDATE_CHANNELS.notam[i]).setTopic(`${CHANNEL_TOPICS['notam']} | Updated at ${moment().format('HH:mm')} EST`);
+    //         await new Promise((resolve, _) => setTimeout(resolve, 1000));
+    //     }
+    // }
     console.log(`[${time()}] [MAIN] NOTAM update complete.`);
 }
 async function updateClosures(skipTopicUpdate) {
+    let started = moment().format('DD HH:mm');
     let closures = await getClosures();
     await EnterMongo();
 
@@ -117,6 +118,7 @@ async function updateClosures(skipTopicUpdate) {
         if(!result.lastErrorObject.updatedExisting || JSON.stringify(closure) !== JSON.stringify(result.value)) {
             // Either something new was added to the database, or a previously existing
             // item was modified.
+            if(moment().isAfter(closure.stop)) continue; // Skip update if it's for something in the past
             await postUpdate({
                 type: 'closure',
                 old: result.value,
@@ -126,14 +128,14 @@ async function updateClosures(skipTopicUpdate) {
         }
     }
     await ExitMongo();
-    if(!skipTopicUpdate) {
-        await new Promise((resolve, _) => setTimeout(resolve, 2000));
-        for(let i = 0; i < UPDATE_CHANNELS.closure.length; i++) {
-            await SpaceBot.channels.cache.get(UPDATE_CHANNELS.closure[i]).setTopic(`${CHANNEL_TOPICS['closure']} | Updated at ${moment().format('HH:mm')} EST`);
-            await new Promise((resolve, _) => setTimeout(resolve, 1000));
-        }
-    }
-    console.log(`[${time()}] [MAIN] Closure update complete.`);
+    // if(!skipTopicUpdate) {
+    //     await new Promise((resolve, _) => setTimeout(resolve, 2000));
+    //     for(let i = 0; i < UPDATE_CHANNELS.closure.length; i++) {
+    //         await SpaceBot.channels.cache.get(UPDATE_CHANNELS.closure[i]).setTopic(`${CHANNEL_TOPICS['closure']} | Updated at ${moment().format('HH:mm')} EST`);
+    //         await new Promise((resolve, _) => setTimeout(resolve, 1000));
+    //     }
+    // }
+    console.log(`[${time()}] [MAIN] Closure update complete. (Started ${started})`);
 }
 async function updateLaunches(skipTopicUpdate) {
     let launches = await getLaunches();
@@ -173,9 +175,9 @@ SpaceBot.on("ready", () => {
     // During development, doing this on every restart produces an unnecessary
     // amount of message spam in Discord. :(
     // updateWeather();
-    setTimeout(() => updateNOTAMs(true), 1000);
-    setTimeout(() => updateClosures(true), 6000);
-    setTimeout(() => updateLaunches(true), 11000);
+    // setTimeout(() => updateNOTAMs(true), 1000);
+    // setTimeout(() => updateClosures(true), 6000);
+    // setTimeout(() => updateLaunches(true), 11000);
     // Channel topics won't change the "updated at __:__" on the first run
 });
 
@@ -219,14 +221,23 @@ var WEATHER_INTERVAL = setInterval(() => {
     console.log(`[${time()}] [CRON] Starting weather update...`);
     updateWeather();
 }, WEATHER_DELAY);
-var NOTAM_INTERVAL = setInterval(() => {
-    console.log(`[${time()}] [CRON] Starting NOTAM update...`);
-    updateNOTAMs();
-}, NOTAM_DELAY);
-var CLOSURE_INTERVAL = setInterval(() => {
-    console.log(`[${time()}] [CRON] Starting closure update...`);
-    updateClosures();
-}, CLOSURE_DELAY);
+
+var NOTAM_INTERVAL;
+setTimeout(() => {
+    NOTAM_INTERVAL = setInterval(() => {
+        console.log(`[${time()}] [CRON] Starting NOTAM update...`);
+        updateNOTAMs();
+    }, NOTAM_DELAY);
+}, 60000);
+
+var CLOSURE_INTERVAL;
+setTimeout(() => {
+    CLOSURE_INTERVAL = setInterval(() => {
+        console.log(`[${time()}] [CRON] Starting closure update...`);
+        updateClosures();
+    }, CLOSURE_DELAY);
+}, 120000);
+
 var LAUNCH_INTERVAL = setInterval(() => {
     console.log(`[${time()}] [CRON] Starting launch update...`);
     updateLaunches();
