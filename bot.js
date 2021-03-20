@@ -12,7 +12,7 @@ SpaceBot.login(process.env.DISCSEC);
 
 var min = 0;
 function count() {
-    min += 1;
+    min += 3;
     function format(num) { return num < 10 ? `0${num}` : num; }
     SpaceBot.user.setActivity(`stars for ${parseInt(min / 60)}h${format(min % 60)}m`, {type: 'WATCHING'});
 }
@@ -57,7 +57,35 @@ var ROLES = {
 
 SpaceBot.on("ready", () => {
     console.log(`[${time()}] [DISC] ${process.env.DISCUSR} logged in.`);
-    setInterval(count, 60000);
+
+    function updater(channel_list, type) {
+        return async () => {
+            if(SpaceBot.__last_updates[type] === SpaceBot.__updates[type]) return; // If nothing has been updated, don't update channel topics
+            SpaceBot.__last_updates[type] = SpaceBot.__updates[type];
+            for(let i = 0; i < channel_list.length; i++) {
+                await SpaceBot.channels.cache.get(UPDATE_CHANNELS.closure[i]).setTopic(`${CHANNEL_TOPICS['closure']} | Updated around ${SpaceBot.__updates[type]} EST`);
+                await new Promise((resolve, _) => setTimeout(resolve, 1000));
+            }
+        }
+    }
+
+    SpaceBot.__intervals = {
+        'notams': setInterval(updater(UPDATE_CHANNELS.notam, 'notams'), 590000),
+        'closures': setInterval(updater(UPDATE_CHANNELS.notam, 'closures'), 600000),
+        'launch_schedule': setInterval(updater(UPDATE_CHANNELS.notam, 'launch_schedule'), 610000),
+    }
+    SpaceBot.__last_updates = {
+        'notams': null,
+        'closures': null,
+        'launch_schedule': null,
+    }
+    SpaceBot.__updates = {
+        'notams': null,
+        'closures': null,
+        'launch_schedule': null,
+    }
+
+    setInterval(count, 180000);
 });
 SpaceBot.on("error", err => {
     console.log(`[${time()}] [DISC] !! Error in discord bot:`);
@@ -68,10 +96,12 @@ SpaceBot.sendMessage = (channel, content) => SpaceBot.channels.cache.get(channel
 SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
     var chans = UPDATE_CHANNELS[type];
     if(type === 'notam') {
-        if(JSON.stringify(old_data) === '{}') {
+        if(old_data === 'repost') {
+            var msg = `__**REPOSTED**__: <@&${ROLES['TFR']}> has been reposted:\n> NOTAM: ${new_data.id}\n> Start: \`${moment(new_data.start).format('M-DD, HH:mm')} EST\`\n> End: \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\`\n> Altitude: \`${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}\`\n${new_data.link}`;
+        } else if(JSON.stringify(old_data) === '{}') {
             var msg = `__**NEW**__: <@&${ROLES['TFR']}> posted:\n> NOTAM: ${new_data.id}\n> Start: \`${moment(new_data.start).format('M-DD, HH:mm')} EST\`\n> End: \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\`\n> Altitude: \`${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}\`\n${new_data.link}`;
         } else if(JSON.stringify(new_data) === '{}') {
-            var msg = `__**RECALLED**__: <@&${ROLES['TFR']}> has been revoked:\n> NOTAM: ${old_data.id}\n> Start: ~~\`${moment(old_data.start).format('M-DD, HH:mm')} EST\`~~\n> End: ~~\`${moment(old_data.stop).format('M-DD, HH:mm')} EST\`~~\n> Altitude: ~~\`${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}\`~~`;
+            var msg = `__**RECALLED**__: <@&${ROLES['TFR']}> has been removed:\n> NOTAM: ${old_data.id}\n> Start: ~~\`${moment(old_data.start).format('M-DD, HH:mm')} EST\`~~\n> End: ~~\`${moment(old_data.stop).format('M-DD, HH:mm')} EST\`~~\n> Altitude: ~~\`${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}\`~~`;
         } else {
             var msg = [
                 `**UPDATE**: <@&${ROLES['TFR']}> has been modified:`,
@@ -128,9 +158,9 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         function getDisplayTime(time) {
             if(time.type === 'undecided') return [time.start, 'TBD'];
             start_adj = moment(time.start).local();
-            if(time.type === 'exact') return [start_adj.format('ddd MMM Mo'), start_adj.format('HH:mm') + ' (eastern)'];
-            if(time.type === 'approximate') return [start_adj.format('ddd MMM Mo'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
-            if(time.type === 'window') return [start_adj.format('ddd MMM Mo'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Mo)')} (eastern)`];
+            if(time.type === 'exact') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern)'];
+            if(time.type === 'approximate') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
+            if(time.type === 'window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Do)')} (eastern)`];
             return [time.start, 'TBD'];
         }
 

@@ -48,10 +48,11 @@ async function updateNOTAMs(skipTopicUpdate) {
         notam.start = notam.start.format();
         notam.stop = notam.stop.format();
         let result = await collection.findOneAndUpdate({id: notam.id}, {$set: notam}, {upsert: true});
-        await wl_coll.findOneAndUpdate({notam_id: notam.id}, {$set: {
+        let repost = await wl_coll.findOneAndUpdate({notam_id: notam.id}, {$set: {
             notam_id: notam.id,
             expires: notam.stop,
         }}, {upsert: true});
+        repost = repost.lastErrorObject.updatedExisting === false;
         if(result.value) delete result.value._id;
         else result.value = {};
         if(!result.lastErrorObject.updatedExisting || JSON.stringify(notam) !== JSON.stringify(result.value)) {
@@ -62,6 +63,12 @@ async function updateNOTAMs(skipTopicUpdate) {
                 new: notam
             });
             await new Promise((resolve, _) => setTimeout(resolve, 1000));
+        } else if(repost) {
+            await postUpdate({
+                type: 'notam',
+                old: 'repost',
+                new: notam
+            });
         }
     }
 
@@ -92,13 +99,7 @@ async function updateNOTAMs(skipTopicUpdate) {
     }
 
     await ExitMongo();
-    // if(!skipTopicUpdate) {
-    //     await new Promise((resolve, _) => setTimeout(resolve, 2000));
-    //     for(let i = 0; i < UPDATE_CHANNELS.notam.length; i++) {
-    //         await SpaceBot.channels.cache.get(UPDATE_CHANNELS.notam[i]).setTopic(`${CHANNEL_TOPICS['notam']} | Updated at ${moment().format('HH:mm')} EST`);
-    //         await new Promise((resolve, _) => setTimeout(resolve, 1000));
-    //     }
-    // }
+    SpaceBot.__updates.notams = moment.format('HH:mm');
     console.log(`[${time()}] [MAIN] NOTAM update complete.`);
 }
 async function updateClosures(skipTopicUpdate) {
@@ -128,13 +129,7 @@ async function updateClosures(skipTopicUpdate) {
         }
     }
     await ExitMongo();
-    // if(!skipTopicUpdate) {
-    //     await new Promise((resolve, _) => setTimeout(resolve, 2000));
-    //     for(let i = 0; i < UPDATE_CHANNELS.closure.length; i++) {
-    //         await SpaceBot.channels.cache.get(UPDATE_CHANNELS.closure[i]).setTopic(`${CHANNEL_TOPICS['closure']} | Updated at ${moment().format('HH:mm')} EST`);
-    //         await new Promise((resolve, _) => setTimeout(resolve, 1000));
-    //     }
-    // }
+    SpaceBot.__updates.closures = moment.format('HH:mm');
     console.log(`[${time()}] [MAIN] Closure update complete. (Started ${started})`);
 }
 async function updateLaunches(skipTopicUpdate) {
@@ -157,20 +152,16 @@ async function updateLaunches(skipTopicUpdate) {
         }
     }
     await ExitMongo();
-    if(!skipTopicUpdate) {
-        await new Promise((resolve, _) => setTimeout(resolve, 2000));
-        for(let i = 0; i < UPDATE_CHANNELS.closure.length; i++) {
-            await SpaceBot.channels.cache.get(UPDATE_CHANNELS.launch[i]).setTopic(`${CHANNEL_TOPICS['launch']} | Updated at ${moment().format('HH:mm')} EST`);
-            await new Promise((resolve, _) => setTimeout(resolve, 1000));
-        }
-    }
+    SpaceBot.__updates.launch_schedule = moment.format('HH:mm');
     console.log(`[${time()}] [MAIN] Launch update complete.`);
 }
 
 console.log('[ENV] Loading discord bot');
 const { SpaceBot, UPDATE_CHANNELS, CHANNEL_TOPICS } = require('./bot');
 SpaceBot.on("ready", () => {
-    console.log(`[${time()}] [MAIN] Running initial updates`);
+
+    console.log(`[${time()}] [MAIN] SpaceBot is ready!`)
+    // console.log(`[${time()}] [MAIN] Running initial updates`);
     // Weather updates often enough to skip it on the initial iteration.
     // During development, doing this on every restart produces an unnecessary
     // amount of message spam in Discord. :(
