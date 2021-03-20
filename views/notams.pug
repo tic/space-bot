@@ -1,0 +1,40 @@
+extends base
+
+block scriptBlock
+    script(src="https://cdn.jsdelivr.net/npm/luxon@1.25.0/build/global/luxon.min.js")
+    script(src="/js/tfr_writer.js")
+
+block content
+    div(style="display: flex; flex-direction: column; align-items: center;")
+        h2 Upcoming TFRs
+        h5
+            | View all NOTAMS at the offical 
+            a(href="https://tfr.faa.gov/tfr2/list.jsp" target="_blank") FAA website
+            | .
+        h6 TFR dates are auto-adjusted to your timezone.
+        h6
+            div
+                span.icon(style="margin-right: 10px; color: #f0f;")
+                    i.fa.fa-paper-plane
+                | Restriction which allows for a flight attempt.
+            div
+                span.icon(style="margin-right: 10px; color: #39a345;")
+                    i.fa.fa-industry
+                | Indicates standard site operations restriction.
+    div(style="display: flex; flex-wrap: wrap; justify-content: center;")
+        for tfr in notams
+            .card(style="width: 18rem; margin: 10px;")
+                .card-body.tfr
+                    .data=JSON.stringify({start: tfr.start, stop: tfr.stop})
+                    h5.card-title
+                        if (tfr.altitude == 'Unlimited')
+                            span.icon(style="margin-right: 10px; color: #f0f;")
+                                i.fa.fa-paper-plane
+                        else
+                            span.icon(style="display: none; margin-right: 10px; color: #39a345;")
+                                i.fa.fa-industry
+                        a(href=tfr.link target="_blank") #{tfr.id}
+                    p.card-text.start(style="margin-bottom: 0px;") TFR Activates:
+                    p.card-text.stop TFR Ends:
+                    div(style="margin-bottom: 5px;")
+        

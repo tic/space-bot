@@ -1,0 +1,86 @@
+doctype html
+html
+    head
+        if(title)
+            title=title + ' | SpaceX Boca Chica'
+        else
+            title=' | SpaceX Boca Chica'
+        meta(charset="utf-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1")
+        link(rel="shortcut icon", href="https://i.gyazo.com/3869e5bdf3052f267a8ce2c59fd049bb.png")
+        link(rel="stylesheet", href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css", integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T", crossorigin="anonymous")
+        link(rel="stylesheet", href="https://use.fontawesome.com/releases/v5.7.0/css/all.css", integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ", crossorigin="anonymous")
+        link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.3/css/mdb.min.css")
+        link(rel="stylesheet", href="https://fonts.googleapis.com/icon?family=Material+Icons")
+        script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js")
+        script(src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js")
+        style.
+            body {
+                background-color: #232323;
+                color: #fff;
+            }
+            .nav-bg {
+                background-color: #121212;
+                color: #fff;
+            }
+            .content-bg {
+                margin: 15px;
+                padding: 15px;
+                border: 2px solid #fff;
+            }
+            .nav-link {
+                font-weight: bold;
+            }
+            
+            .card { background-color: #454545; }
+            .card .card-body .card-title { font-weight: bold; }
+            .card .card-body .card-subtitle { color: #efefef; }
+            .card .card-body .card-text { color: #dedede; }
+            
+            #wind-meter span { font-size: 12px; }
+            #wind-meter .units:after { content: " mph"; }
+            
+            .data { display: none; }
+            .item {
+                border: 2px solid #fff;
+                border-radius: 5px;
+                padding: 5px;
+                margin-bottom: 5px;
+            }
+            
+        block customHead
+    body
+        // Navigation bar
+        nav.navbar.navbar-expand-sm.nav-bg
+            a.navbar-brand(href='/', title="Today | SpaceX Boca Chica")
+                img(style="max-height:30px", src="https://i.gyazo.com/3869e5bdf3052f267a8ce2c59fd049bb.png")
+            button.navbar-toggler(type='button' data-toggle='collapse' data-target='#navbarSupportedContent-555' aria-controls='navbarSupportedContent-555' aria-expanded='false' aria-label='Toggle navigation')
+                span.navbar-toggler-icon-
+                    i.fas.fa-bars.vertical(style="color:white;")
+            #navbarSupportedContent-555.collapse.navbar-collapse
+                ul.navbar-nav.mr-auto
+                    li.nav-item.active
+                        a.nav-link(href='/')
+                            | Today
+                            span.sr-only (current)
+                    li.nav-item
+                        a.nav-link(href='/notams')
+                            | NOTAMs
+                    li.nav-item
+                        a.nav-link(href='/closures')
+                            | Road Closures
+                    li.nav-item
+                        a.nav-link(href='/launches')
+                            | Global Space Launches
+        // Page content
+        .content-bg
+            block content
+        
+        div(style="display: flex; flex-direction: column; align-items: center; margin-bottom: 100px;")
+            div(style="width: min(calc(100% - 20px), 450px); margin-top: 45px;")
+                h5(style="text-align: justify; ") See our Discord to get automatic notications when things change!
+            iframe(src="https://discord.com/widget?id=800873041995104286&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts")
+        
+        .footer-bg
+            
+        block scriptBlock

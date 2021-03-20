@@ -1,0 +1,27 @@
+extends base
+
+block scriptBlock
+    script(src="https://cdn.jsdelivr.net/npm/luxon@1.25.0/build/global/luxon.min.js")
+    script(src="/js/closure_writer.js")
+
+block content
+    div(style="display: flex; flex-direction: column; align-items: center;")
+        h2 7 Day Road Closure Schedule
+        h5
+            | View all closures at Cameron County's 
+            a(href="https://cameroncounty.us/spacex" target="_blank") official website
+            | .
+        h5 Dates are shown relative to Boca Chica, but road closure times are auto-adjusted to your timezone.
+    div(style="display: flex; flex-wrap: wrap; justify-content: center;")
+        for day in closures
+            .card(style="width: 18rem; margin: 10px;")
+                .card-body.day
+                    .data=JSON.stringify({label: day.label, closures: day.closures})
+                    h5.card-title #{day.label}
+                    p.card-text.warning(style='display: none; color: #f70; font-weight: bold;') No road closures posted.
+                    for closure in day.closures
+                        h6.card-subtitle.mb-2 #{closure.status}
+                        p.card-text.start(style="margin-bottom: 0px;") Road closes:
+                        p.card-text.stop Road opens:
+                        div(style="margin-bottom: 5px;")
+        
