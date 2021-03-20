@@ -25,6 +25,7 @@ const AFFILIATIONS = [
 async function getWeather() {
     return await (await fetch(WEATHER)).json();
 }
+
 function getNOTAMURL(id) {
     return `${NOTAMBASE}/save_pages/detail_${id.replace('/', '_')}.html`;
 }
@@ -103,6 +104,7 @@ async function getNOTAMs() {
 
     return notams;
 }
+
 async function getClosures() {
     const content = await (await fetch(CLOSURES)).text();
     const soup = new JSSoup(content);
@@ -112,11 +114,16 @@ async function getClosures() {
     .map(row => {
         let [type, date, time, status] = row.findAll('td')
             .map(cell => cell.contents);
+        if(type == '' || date == '' || time == '' || status == '') {
+            console.log('Empty field on closure page!')
+            return null;
+        }
         let [start, stop] = time.toString().split(' to ')
             .map(time => {
                 time = time.replace(' ', '');
                 const ttype = time.substring(time.length - 2, time.length);
-                if(ttype === "am") {
+                const ttype2 = time.substring(time.length - 4, time.length);
+                if(ttype === "am" || ttype2 === "a.m.") {
                     // AM time
                     var [hr, min] = time.split(':').map(t => parseInt(t));
                 } else {
@@ -135,18 +142,98 @@ async function getClosures() {
         const m_stop = moment(m).hour(stop.hr).minute(stop.min);
         return {
             start: m_start,
-            status: status.toString(),
+            status: status.toString().replace('<br />', '').replace(',,', ' ').replace(',', '').replace('\n', ' '),
             stop: m_stop,
-            type: type.toString().replace(',<br />,\n', ' '),
+            type: type.toString().replace(',<br />,', ' '),
         };
     });
 
-    return closures;
+    return closures.filter(_ => _);
 }
+
 function getAffiliations(description) {
     return [...new Set(AFFILIATIONS
         .filter(({tag}) => description.indexOf(tag) > -1)
         .map(({group}) => group))];
+}
+function cleanTime(date, time) {
+    const MonthAbbrevs = {'Jan': 'January', 'Feb': 'February', 'Mar': 'March', 'Apr': 'April', 'Jun': 'June', 'Jul': 'July', 'Aug': 'August', 'Sept': 'September', 'Oct': 'October', 'Nov': 'November', 'Dec': 'December'};
+    function detectTime(time, day, month) {
+        const t = parseInt(time);
+        const hour = parseInt(t / 100);
+        const min = t % 100;
+        let m = moment().tz('GMT').month(month).date(day).hour(hour).minute(min).second(0);
+        return m.format();
+    }
+
+    var [day, month] = ['', '']
+    try {
+        if(date.indexOf('/') > -1) {
+            let [d1, d2] = date.split('/');
+            // Second date contains month and day
+            let n2 = parseInt(d2);
+            if(isNaN(n2)) {
+                [month, day] = d2.split(' ');
+                day = parseInt(day);
+            }
+            else {
+                month = d1.split(' ')[0];
+                day = n2;
+            }
+
+            // Month is abbreviated
+            if(month.indexOf('.') > -1) month = MonthAbbrevs[month.substring(0, month.indexOf('.'))];
+        } else {
+
+            if(/^[A-Za-z\.]+ \d+$/.test(date)) {
+                [month, day] = date.split(' ');
+                if(month.indexOf('.') > -1) month = MonthAbbrevs[month.substring(0, month.indexOf('.'))];
+                day = parseInt(day)
+            } else {
+                month = null;
+                day = null;
+            }
+        }
+    } catch(err) {
+        console.log('Date err: ' + err.toString())
+        return { type: 'unknown', start: null, stop: null }
+    }
+
+    if(/TBD/i.test(time)) {
+        return { type: 'undecided', start: date, stop: null }
+    } else {
+        try {
+            let type = 'unknown';
+            if(/^\d{4} GMT/.test(time)) type = 'exact';
+            else if(/\d{4}-\d{4} GMT/.test(time)) type = 'window';
+            else if(/Approx. \d{4}/i.test(time)) type = 'approximate';
+            else if(/\d{4} or \d{4} GMT/i.test(time)) type = 'flexible'
+
+            if(type === 'unknown') throw new Error('unknown date format "' + time + '"')
+
+            var [start, stop] = [null, null];
+            if(type === 'window') {
+                //  Need to parse out start and stop times
+                cap = /(\d{4})-(\d{4}) GMT/.exec(time);
+                start = detectTime(cap[1], day, month);
+                stop = detectTime(cap[2], day, month);
+            } else if(type === 'flexible') {
+                // Parse out first and second time possibilities
+                cap = /(\d{4}) or (\d{4}) GMT/i.exec(time);
+                start = detectTime(cap[1], day, month);
+                stop = detectTime(cap[2], day, month);
+            } else {
+                // Just need to parse out the start time
+                cap = /(\d{4}) GMT/.exec(time);
+                start = detectTime(cap[1], day, month);
+            }
+
+            return { type, start, stop}
+        } catch(err) {
+            console.log('Time err: ' + err.toString())
+            return { type: 'unknown', start: null, stop: null }
+        }
+    }
 }
 async function getLaunches() {
     const content = await (await fetch(LAUNCHES)).text();
@@ -179,6 +266,8 @@ async function getLaunches() {
 
         let affiliations = getAffiliations(description);
 
+        let cleaned_time = cleanTime(date, launch_win);
+
         launches.push({
             mission,
             affiliations,
@@ -187,6 +276,7 @@ async function getLaunches() {
             launch_site,
             vehicle,
             window: launch_win,
+            time: cleaned_time,
         });
     }
     return launches;

@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const moment = require('moment');
+require('moment-timezone');
 var SpaceBot = new Discord.Client();
 
 function time() {
@@ -123,7 +124,18 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             await new Promise((resolve, _) => setTimeout(resolve, 1000));
         }
     } else if(type === 'launch') {
+
+        function getDisplayTime(time) {
+            if(time.type === 'undecided') return [time.start, 'TBD'];
+            start_adj = moment(time.start).local();
+            if(time.type === 'exact') return [start_adj.format('ddd MMM Mo'), start_adj.format('HH:mm') + ' (eastern)'];
+            if(time.type === 'approximate') return [start_adj.format('ddd MMM Mo'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
+            if(time.type === 'window') return [start_adj.format('ddd MMM Mo'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Mo)')} (eastern)`];
+            return [time.start, 'TBD'];
+        }
+
         if(JSON.stringify(old_data) === '{}') {
+            [new_disp_date, new_disp_time] = getDisplayTime(moment(new_data.time));
             var msg = [
                 `__**NEW**__: <@&${ROLES['Launch']}> posted:`,
                 `> ${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`,
@@ -136,14 +148,16 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 new_data.description
             ].join('\n');
         } else {
+            [old_disp_date, old_disp_time] = old_data.time ? getDisplayTime(moment(old_data.time)) : [old_data.date, old_data.window];
+            [new_disp_date, new_disp_time] = getDisplayTime(new_data.time);
             var msg = [
                 `**UPDATE**: <@&${ROLES['Launch']}> has been modified:`,
                 `> ${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`,
                 `> Mission: ${new_data.mission}`,
                 `> Vehicle: ${new_data.vehicle}`,
-                old_data.date === new_data.date ? `> Target date: ${new_data.date}` : `> **Target date: ${new_data.date}**`,
-                old_data.window === new_data.window ? `> Launch window: ${new_data.window}` : `> **Launch window: ${new_data.window}**`,
-                old_data.site === new_data.site ? `> Launch site: ${new_data.launch_site}` : `> **Launch site: **${new_data.launch_site}**`,
+                old_disp_date === new_disp_date ? `> Target date: ${new_disp_date}` : `> **Target date: ~~${old_disp_date}~~ ${new_disp_date}**`,
+                old_disp_time === new_disp_time ? `> Launch window: ${new_disp_time}` : `> **Launch window: ~~${old_disp_time}~~ ${new_disp_time}**`,
+                old_data.site === new_data.site ? `> Launch site: ${new_data.launch_site}` : `> **Launch site: ~~${old_data.launch_site}~~ **${new_data.launch_site}**`,
                 `> Mission description`,
                 new_data.description
             ].join('\n');
