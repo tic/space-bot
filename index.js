@@ -99,7 +99,7 @@ async function updateNOTAMs(skipTopicUpdate) {
     }
 
     await ExitMongo();
-    SpaceBot.__updates.notams = moment.format('HH:mm');
+    SpaceBot.__updates.notam = moment().format('HH:mm');
     console.log(`[${time()}] [MAIN] NOTAM update complete.`);
 }
 async function updateClosures(skipTopicUpdate) {
@@ -129,7 +129,7 @@ async function updateClosures(skipTopicUpdate) {
         }
     }
     await ExitMongo();
-    SpaceBot.__updates.closures = moment.format('HH:mm');
+    SpaceBot.__updates.closure = moment().format('HH:mm');
     console.log(`[${time()}] [MAIN] Closure update complete. (Started ${started})`);
 }
 async function updateLaunches(skipTopicUpdate) {
@@ -152,7 +152,7 @@ async function updateLaunches(skipTopicUpdate) {
         }
     }
     await ExitMongo();
-    SpaceBot.__updates.launch_schedule = moment.format('HH:mm');
+    SpaceBot.__updates.launch = moment().format('HH:mm');
     console.log(`[${time()}] [MAIN] Launch update complete.`);
 }
 
@@ -168,7 +168,7 @@ SpaceBot.on("ready", () => {
     // updateWeather();
     // setTimeout(() => updateNOTAMs(true), 1000);
     // setTimeout(() => updateClosures(true), 6000);
-    // setTimeout(() => updateLaunches(true), 11000);
+    // setTimeout(() => updateLaunches(true), 1000);
     // Channel topics won't change the "updated at __:__" on the first run
 });
 

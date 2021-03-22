@@ -63,26 +63,26 @@ SpaceBot.on("ready", () => {
             if(SpaceBot.__last_updates[type] === SpaceBot.__updates[type]) return; // If nothing has been updated, don't update channel topics
             SpaceBot.__last_updates[type] = SpaceBot.__updates[type];
             for(let i = 0; i < channel_list.length; i++) {
-                await SpaceBot.channels.cache.get(UPDATE_CHANNELS.closure[i]).setTopic(`${CHANNEL_TOPICS['closure']} | Updated around ${SpaceBot.__updates[type]} EST`);
+                await SpaceBot.channels.cache.get(UPDATE_CHANNELS.closure[i]).setTopic(`${CHANNEL_TOPICS[type]} | Updated around ${SpaceBot.__updates[type]} EST`);
                 await new Promise((resolve, _) => setTimeout(resolve, 1000));
             }
         }
     }
 
     SpaceBot.__intervals = {
-        'notams': setInterval(updater(UPDATE_CHANNELS.notam, 'notams'), 590000),
-        'closures': setInterval(updater(UPDATE_CHANNELS.notam, 'closures'), 600000),
-        'launch_schedule': setInterval(updater(UPDATE_CHANNELS.notam, 'launch_schedule'), 610000),
+        'notam': setInterval(updater(UPDATE_CHANNELS.notam, 'notam'), 590000),
+        'closure': setInterval(updater(UPDATE_CHANNELS.notam, 'closure'), 600000),
+        'launch': setInterval(updater(UPDATE_CHANNELS.notam, 'launch'), 610000),
     }
     SpaceBot.__last_updates = {
-        'notams': null,
-        'closures': null,
-        'launch_schedule': null,
+        'notam': null,
+        'closure': null,
+        'launch': null,
     }
     SpaceBot.__updates = {
-        'notams': null,
-        'closures': null,
-        'launch_schedule': null,
+        'notam': null,
+        'closure': null,
+        'launch': null,
     }
 
     setInterval(count, 180000);
@@ -97,20 +97,65 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
     var chans = UPDATE_CHANNELS[type];
     if(type === 'notam') {
         if(old_data === 'repost') {
-            var msg = `__**REPOSTED**__: <@&${ROLES['TFR']}> has been reposted:\n> NOTAM: ${new_data.id}\n> Start: \`${moment(new_data.start).format('M-DD, HH:mm')} EST\`\n> End: \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\`\n> Altitude: \`${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}\`\n${new_data.link}`;
+            var msg = new Discord.MessageEmbed()
+                .setColor('#0000ff')
+                .setTitle(`Notice to Airmen Reposted`)
+                .setURL(new_data.link)
+                .setAuthor('Federal Aviation Administration (FAA)', 'https://tfr.faa.gov/tfr2/images/head_app_logo.gif', 'https://www.faa.gov/')
+                .setDescription(`<@&${ROLES['TFR']}>\nA previous Temporary Flight Restriction (TFR) was reposted.`)
+                .addFields(
+                    { name: 'NOTAM ID', value: new_data.id, inline: true},
+                    { name: 'Restriction Begins', value: `${moment(new_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
+                    { name: 'Restriction Ends', value: `${moment(new_data.stop).format('M-DD, HH:mm')} Eastern`, inline: true},
+                    { name: 'Altitude', value: `${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
+                )
+                .setThumbnail(new_data.image)
+                .setTimestamp()
         } else if(JSON.stringify(old_data) === '{}') {
-            var msg = `__**NEW**__: <@&${ROLES['TFR']}> posted:\n> NOTAM: ${new_data.id}\n> Start: \`${moment(new_data.start).format('M-DD, HH:mm')} EST\`\n> End: \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\`\n> Altitude: \`${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}\`\n${new_data.link}`;
+            var msg = new Discord.MessageEmbed()
+                .setColor('#00ff00')
+                .setTitle(`New Notice to Airmen Posted`)
+                .setURL(new_data.link)
+                .setAuthor('Federal Aviation Administration (FAA)', 'https://i.gyazo.com/ab618db4d6b3a93650aa4c786bb56567.png', 'https://www.faa.gov/')
+                .setDescription(`<@&${ROLES['TFR']}>\nA new Temporary Flight Restriction (TFR) has been posted.`)
+                .addFields(
+                    { name: 'NOTAM ID', value: new_data.id, inline: true},
+                    { name: 'Restriction Begins', value: `${moment(new_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
+                    { name: 'Restriction Ends', value: `${moment(new_data.stop).format('M-DD, HH:mm')} Eastern`, inline: true},
+                    { name: 'Altitude', value: `${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
+                )
+                .setThumbnail(new_data.image)
+                .setTimestamp()
         } else if(JSON.stringify(new_data) === '{}') {
-            var msg = `__**RECALLED**__: <@&${ROLES['TFR']}> has been removed:\n> NOTAM: ${old_data.id}\n> Start: ~~\`${moment(old_data.start).format('M-DD, HH:mm')} EST\`~~\n> End: ~~\`${moment(old_data.stop).format('M-DD, HH:mm')} EST\`~~\n> Altitude: ~~\`${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}\`~~`;
+            var msg = new Discord.MessageEmbed()
+                .setColor('#ff0000')
+                .setTitle(`Notice to Airmen Posted Removed`)
+                .setURL(new_data.link)
+                .setAuthor('Federal Aviation Administration (FAA)', 'https://i.gyazo.com/ab618db4d6b3a93650aa4c786bb56567.png', 'https://www.faa.gov/')
+                .setDescription(`<@&${ROLES['TFR']}>\nAn existing Temporary Flight Restriction (TFR) was removed.`)
+                .addFields(
+                    { name: 'NOTAM ID', value: `~~${old_data.id}~~`, inline: true},
+                    { name: 'Restriction Begins', value: `~~${moment(old_data.start).format('M-DD, HH:mm')} Eastern~~`, inline: true},
+                    { name: 'Restriction Ends', value: `~~${moment(old_data.stop).format('M-DD, HH:mm')} Eastern~~`, inline: true},
+                    { name: 'Altitude', value: `~~${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}~~`, inline: true}
+                )
+                .setThumbnail(new_data.image)
+                .setTimestamp()
         } else {
-            var msg = [
-                `**UPDATE**: <@&${ROLES['TFR']}> has been modified:`,
-                `> NOTAM: ${new_data.id}`,
-                old_data.start === new_data.start ? `> Start: ${moment(new_data.start).format('M-DD, HH:mm')}` : `> Start: \`~~${moment(old_data.start).format('M-DD, HH:mm')}~~ ${moment(new_data.start).format('M-DD, HH:mm')} EST\``,
-                old_data.stop === new_data.stop ? `> End: ${moment(new_data.stop).format('M-DD, HH:mm')} EST` : `> End: \`~~${moment(old_data.stop).format('M-DD, HH:mm')}~~ \`${moment(new_data.stop).format('M-DD, HH:mm')} EST\``,
-                old_data.altitude === new_data.altitude ? `> Altitude: ${new_data.altitude}` : `> Altitude: \`~~${old_data.altitude}~~ ${new_data.altitude}\``,
-                new_data.link,
-            ].join('\n');
+            var msg = new Discord.MessageEmbed()
+                .setColor('#ffff00')
+                .setTitle(`Notice to Airmen Modified`)
+                .setURL(new_data.link)
+                .setAuthor('Federal Aviation Administration (FAA)', 'https://i.gyazo.com/ab618db4d6b3a93650aa4c786bb56567.png', 'https://www.faa.gov/')
+                .setDescription(`<@&${ROLES['TFR']}>\nAx existing Temporary Flight Restriction (TFR) has been modified.`)
+                .addFields(
+                    { name: 'NOTAM ID', value: new_data.id, inline: true},
+                    { name: 'Restriction Begins', value: old_data.start === new_data.start ? `${moment(new_data.start).format('M-DD, HH:mm')} Eastern` : `~~${moment(old_data.start).format('M-DD, HH:mm')}~~\n${moment(new_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
+                    { name: 'Restriction Ends', value: old_data.stop === new_data.stop ? `${moment(new_data.stop).format('M-DD, HH:mm')} Eastern` : `~~${moment(old_data.stop).format('M-DD, HH:mm')}~~ \`${moment(new_data.stop).format('M-DD, HH:mm')} Eastern`, inline: true},
+                    { name: 'Altitude', value: old_data.altitude === new_data.altitude ? new_data.altitude : `~~${old_data.altitude}~~\n${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
+                )
+                .setThumbnail(new_data.image)
+                .setTimestamp()
         }
         for(let i = 0; i < chans.length; i++) {
             await SpaceBot.sendMessage(chans[i], msg);
@@ -118,16 +163,35 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         }
     } else if(type === 'closure') {
         if(JSON.stringify(old_data) === '{}') {
-            var msg = `__**NEW**__: <@&${ROLES['Closure']}> posted:\n> Day: ${moment(new_data.day, 'YYYY-MM-DD').format('ddd M-DD')}\n> Start: \`${moment(new_data.start).format('HH:mm')}\`\n> End: \`${moment(new_data.stop).format('HH:mm')}\`\n> Type: ${new_data.type}\n> Status: ${new_data.status}`;
+            var msg = new Discord.MessageEmbed()
+                .setColor('#00ff00')
+                .setTitle(`Road Closure Posted`)
+                .setURL('https://cameroncounty.us/spacex/')
+                .setAuthor('Highway 4 - Cameron County', 'https://www.cameroncounty.us/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png', 'https://cameroncounty.us/spacex/')
+                .setDescription(`<@&${ROLES['Closure']}>\nA new closure of Highway 4 in Boca Chica has been posted.`)
+                .addFields(
+                    { name: 'Day', value: moment(new_data.day, 'YYYY-MM-DD').format('dddd, M-DD'), inline: true},
+                    { name: 'Type', value: new_data.type, inline: true},
+                    { name: 'Closure Begins', value: `${moment(new_data.start).format('HH:mm')} Eastern`, inline: true},
+                    { name: 'Closure Ends', value: `${moment(new_data.stop).format('HH:mm')} Eastern`, inline: true},
+                    { name: 'Status', value: new_data.status, inline: true}
+                )
+                .setTimestamp()
         } else {
-            var msg = [
-                `**UPDATE**: <@&${ROLES['Closure']}> has been modified:`,
-                `> Day: ${moment(new_data.day, 'YYYY-MM-DD').format('ddd M-DD')}`,
-                old_data.start === new_data.start ? `> Start: \`${moment(new_data.start).format('HH:mm')}\`` : `> Start: ~~\`${moment(old_data.start).format('HH:mm')}\`~~\` ${moment(new_data.start).format('HH:mm')}\``,
-                old_data.stop === new_data.stop ? `> End: \`${moment(new_data.stop).format('HH:mm')}\`` : `> End: ~~\`${moment(old_data.stop).format('HH:mm')}\`~~\` ${moment(new_data.stop).format('HH:mm')}\``,
-                old_data.type === new_data.type ? `> Type: ${new_data.type}` : `> Type: ~~${old_data.type}~~ ${new_data.type}`,
-                old_data.status === new_data.status ? `> Status: ${new_data.status}` : `> Status: ~~${old_data.status}~~ ${new_data.status}`
-            ].join('\n');
+            var msg = new Discord.MessageEmbed()
+                .setColor('#ffff00')
+                .setTitle(`Road Closure Modification`)
+                .setURL('https://cameroncounty.us/spacex/')
+                .setAuthor('Highway 4 - Cameron County', 'https://www.cameroncounty.us/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png', 'https://cameroncounty.us/spacex/')
+                .setDescription(`<@&${ROLES['Closure']}>\nDetails surrounding a closure of Highway 4 in Boca Chica have changed.`)
+                .addFields(
+                    { name: 'Day', value: moment(new_data.day, 'YYYY-MM-DD').format('dddd, M-DD'), inline: true},
+                    { name: 'Type', value: old_data.type === new_data.type ? new_data.type : `~~${old_data.type}~~\n${new_data.type}`, inline: true},
+                    { name: 'Closure Begins', value: old_data.start === new_data.start ? `${moment(new_data.start).format('HH:mm')} Eastern` : `~~${moment(old_data.start).format('HH:mm')}~~\n${moment(new_data.start).format('HH:mm')} Eastern`, inline: true},
+                    { name: 'Closure Ends', value: old_data.stop === new_data.stop ? `${moment(new_data.stop).format('HH:mm')} Eastern` : `~~${moment(old_data.stop).format('HH:mm')}~~\n${moment(new_data.stop).format('HH:mm')} Eastern`, inline: true},
+                    { name: 'Status', value: old_data.status === new_data.status ? new_data.status : `~~${old_data.status}~~\n${new_data.status}`, inline: true}
+                )
+                .setTimestamp()
         }
         for(let i = 0; i < chans.length; i++) {
             await SpaceBot.sendMessage(chans[i], msg);
@@ -136,18 +200,24 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
     } else if(type === 'weather') {
         let windDir = new_data.windDirection;
         windDir = windDir < 11.25 ? 'N': windDir < 33.75 ? 'NNE': windDir < 56.25 ? 'NE': windDir < 78.75 ? 'ENE': windDir < 101.25 ? 'E': windDir < 123.75 ? 'ESE': windDir < 146.25 ? 'SE': windDir < 168.75 ? 'SSE': windDir < 191.25 ? 'S': windDir < 213.75 ? 'SSW': windDir < 236.25 ? 'SW': windDir < 258.75 ? 'WSW': windDir < 281.25 ? 'W': windDir < 303.75 ? 'WNW': windDir < 326.25 ? 'NW': windDir < 348.75 ? 'NNW': 'N';
-        let msg = [
-            `__**On-site weather**__`,
-            `*Last updated:* ${moment(new_data.lastReceived, 'x').format('MM-DD-YY - HH:mm')} EST:`,
-            `> Temp: ${new_data.temperature}F *feels like ${new_data.temperatureFeelLike}F*`,
-            `> Wind: ${new_data.wind} ${new_data.windUnits} ${windDir} *${new_data.windDirection} deg*`,
-            `> High: ${new_data.hiTemp}F *at ${moment(new_data.hiTempDate, 'x').format('HH:mm')}*`,
-            `> Low: ${new_data.loTemp}F *at ${moment(new_data.loTempDate, 'x').format('HH:mm')}*`,
-            `> Humidity: ${new_data.humidity}%`,
-            `> Barometer: ${new_data.barometer} ${new_data.barometerUnits}; *${new_data.barometerTrend}*`,
-            `> Rain: ${new_data.rain} ${new_data.rainUnits}`,
-            `> Rain to date: ${new_data.seasonalRain} ${new_data.rainUnits}`,
-        ].join('\n');
+        var msg = new Discord.MessageEmbed()
+            .setColor('#0000ff')
+            .setTitle(`Current near-site weather`)
+            .setURL('https://www.weatherlink.com/embeddablePage/show/6a07fed5552d4f768299e4b8c611feed/signature')
+            .setAuthor('Courtesy of LabPadre', 'https://img1.wsimg.com/isteam/ip/261df47a-520f-45e6-9d71-45e70b33894c/logo/46d3e5b3-d657-4d1f-908d-1a7bf3a6384e.gif', 'https://labpadre.com/')
+            .setDescription('Near-site weather is collected by equipment operated by LabPadre.')
+            .addFields(
+                { name: 'Temperature', value: `${new_data.temperature} °F\nfeels like ${new_data.temperatureFeelLike} °F`, inline: true},
+                { name: 'Wind Speed', value: `${new_data.wind} ${new_data.windUnits}\n${windDir} (${new_data.windDirection} degrees)`, inline: true},
+                { name: 'High Temperature', value: `${new_data.hiTemp} °F at ${moment(new_data.hiTempDate, 'x').format('HH:mm')}`, inline: true},
+                { name: 'Low Temperature', value: `${new_data.loTemp} °F at ${moment(new_data.loTempDate, 'x').format('HH:mm')}`, inline: true},
+                { name: 'Humidity', value: `${new_data.humidity}%`, inline: true},
+                { name: 'Barometer', value: `${new_data.barometer} ${new_data.barometerUnits}\n${new_data.barometerTrend}`, inline: true},
+                { name: 'Rain', value: `${new_data.rain} ${new_data.rainUnits}`, inline: true},
+                { name: 'Rain to date', value: `${new_data.seasonalRain} ${new_data.rainUnits}`, inline: true}
+            )
+            .setTimestamp()
+            .setFooter(`Data last received ${moment(new_data.lastReceived, 'x').format('MM-DD-YY - HH:mm')} Eastern`)
         for(let i = 0; i < chans.length; i++) {
             if(chans[i].edit) (await SpaceBot.channels.cache.get(chans[i].channel).messages.fetch(chans[i].id)).edit(msg);
             else await SpaceBot.sendMessage(chans[i].channel, msg);
@@ -164,33 +234,37 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             return [time.start, 'TBD'];
         }
 
+        var affils = `${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`;
         if(JSON.stringify(old_data) === '{}') {
-            [new_disp_date, new_disp_time] = getDisplayTime(moment(new_data.time));
-            var msg = [
-                `__**NEW**__: <@&${ROLES['Launch']}> posted:`,
-                `> ${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`,
-                `> Mission: ${new_data.mission}`,
-                `> Vehicle: ${new_data.vehicle}`,
-                `> Target date: ${new_data.date}`,
-                `> Launch window: ${new_data.window}`,
-                `> Launch site: ${new_data.launch_site}`,
-                `> Mission description:`,
-                new_data.description
-            ].join('\n');
-        } else {
-            [old_disp_date, old_disp_time] = old_data.time ? getDisplayTime(moment(old_data.time)) : [old_data.date, old_data.window];
             [new_disp_date, new_disp_time] = getDisplayTime(new_data.time);
-            var msg = [
-                `**UPDATE**: <@&${ROLES['Launch']}> has been modified:`,
-                `> ${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`,
-                `> Mission: ${new_data.mission}`,
-                `> Vehicle: ${new_data.vehicle}`,
-                old_disp_date === new_disp_date ? `> Target date: ${new_disp_date}` : `> **Target date: ~~${old_disp_date}~~ ${new_disp_date}**`,
-                old_disp_time === new_disp_time ? `> Launch window: ${new_disp_time}` : `> **Launch window: ~~${old_disp_time}~~ ${new_disp_time}**`,
-                old_data.site === new_data.site ? `> Launch site: ${new_data.launch_site}` : `> **Launch site: ~~${old_data.launch_site}~~ **${new_data.launch_site}**`,
-                `> Mission description`,
-                new_data.description
-            ].join('\n');
+            var msg = new Discord.MessageEmbed()
+                .setColor('#ff0000')
+                .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
+                .setURL('https://spaceflightnow.com/launch-schedule/')
+                .setAuthor(`New <@&${ROLES['Launch']}> Posted! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/`)
+                .setDescription(`${affils}\n${new_data.description}`)
+                .addFields(
+                    { name: 'Launch Date', value: new_disp_date, inline: true},
+                    { name: 'Launch Time', value: new_disp_time, inline: true},
+                    { name: 'Launch Site', value: new_data.launch_site, inline: false}
+                )
+                .setTimestamp()
+        } else {
+            [old_disp_date, old_disp_time] = old_data.time ? getDisplayTime(old_data.time) : [old_data.date, old_data.window];
+            [new_disp_date, new_disp_time] = getDisplayTime(new_data.time);
+            if(old_disp_date === new_disp_date && old_disp_time === new_disp_time) return;
+            var msg = new Discord.MessageEmbed()
+                .setColor('#ffff00')
+                .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
+                .setURL('https://spaceflightnow.com/launch-schedule/')
+                .setAuthor(`<@&${ROLES['Launch']}> Update! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/`)
+                .setDescription(`${affils}\n${new_data.description}`)
+                .addFields(
+                    { name: 'Launch Date', value: old_disp_date === new_disp_date ? new_disp_date : `~~${old_disp_date}~~\n${new_disp_date}`, inline: true},
+                    { name: 'Launch Time', value: old_disp_time === new_disp_time ? new_disp_time : `~~${old_disp_time}~~\n${new_disp_time}`, inline: true},
+                    { name: 'Launch Site', value: old_data.site === new_data.site ? new_data.launch_site : `~~${old_data.launch_site}~~\n${new_data.launch_site}`, inline: false}
+                )
+                .setTimestamp()
         }
         for(let i = 0; i < chans.length; i++) {
             await SpaceBot.sendMessage(chans[i], msg);
