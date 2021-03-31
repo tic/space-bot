@@ -92,17 +92,18 @@ SpaceBot.on("error", err => {
     console.warn(err);
 });
 
-SpaceBot.sendMessage = (channel, content) => SpaceBot.channels.cache.get(channel) ? SpaceBot.channels.cache.get(channel).send(content) : null;
+SpaceBot.sendMessage = async (channel, content) => (await SpaceBot.channels.fetch(channel)) ? (await SpaceBot.channels.fetch(channel)).send(content) : null;
 SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
     var chans = UPDATE_CHANNELS[type];
     if(type === 'notam') {
         if(old_data === 'repost') {
+            format_day = `${moment(new_data.start).format('dddd')} the ${moment(new_data.start).format('Do')}`;
             var msg = new Discord.MessageEmbed()
                 .setColor('#0000ff')
-                .setTitle(`Notice to Airmen Reposted`)
+                .setTitle(`NOTAM Reposted for ${format_day}`)
                 .setURL(new_data.link)
                 .setAuthor('Federal Aviation Administration (FAA)', 'https://tfr.faa.gov/tfr2/images/head_app_logo.gif', 'https://www.faa.gov/')
-                .setDescription(`<@&${ROLES['TFR']}>\nA previous Temporary Flight Restriction (TFR) was reposted.`)
+                .setDescription(`A previous Temporary Flight Restriction (TFR) was reposted.`)
                 .addFields(
                     { name: 'NOTAM ID', value: new_data.id, inline: true},
                     { name: 'Restriction Begins', value: `${moment(new_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
@@ -112,12 +113,13 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setThumbnail(new_data.image)
                 .setTimestamp()
         } else if(JSON.stringify(old_data) === '{}') {
+            format_day = `${moment(new_data.start).format('dddd')} the ${moment(new_data.start).format('Do')}`;
             var msg = new Discord.MessageEmbed()
                 .setColor('#00ff00')
-                .setTitle(`New Notice to Airmen Posted`)
+                .setTitle(`NOTAM Posted for ${format_day}`)
                 .setURL(new_data.link)
                 .setAuthor('Federal Aviation Administration (FAA)', 'https://i.gyazo.com/ab618db4d6b3a93650aa4c786bb56567.png', 'https://www.faa.gov/')
-                .setDescription(`<@&${ROLES['TFR']}>\nA new Temporary Flight Restriction (TFR) has been posted.`)
+                .setDescription(`A new Temporary Flight Restriction (TFR) has been posted. Details of the TFR are shown below.`)
                 .addFields(
                     { name: 'NOTAM ID', value: new_data.id, inline: true},
                     { name: 'Restriction Begins', value: `${moment(new_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
@@ -127,27 +129,29 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setThumbnail(new_data.image)
                 .setTimestamp()
         } else if(JSON.stringify(new_data) === '{}') {
+            format_day = `${moment(old_data.start).format('dddd')} the ${moment(old_data.start).format('Do')}`;
             var msg = new Discord.MessageEmbed()
                 .setColor('#ff0000')
-                .setTitle(`Notice to Airmen Posted Removed`)
+                .setTitle(`NOTAM for Removed for ${format_day}`)
                 .setURL(new_data.link)
                 .setAuthor('Federal Aviation Administration (FAA)', 'https://i.gyazo.com/ab618db4d6b3a93650aa4c786bb56567.png', 'https://www.faa.gov/')
-                .setDescription(`<@&${ROLES['TFR']}>\nAn existing Temporary Flight Restriction (TFR) was removed.`)
+                .setDescription(`An existing Temporary Flight Restriction (TFR) was removed. The previous details for the TFR are shown below.`)
                 .addFields(
-                    { name: 'NOTAM ID', value: `~~${old_data.id}~~`, inline: true},
-                    { name: 'Restriction Begins', value: `~~${moment(old_data.start).format('M-DD, HH:mm')} Eastern~~`, inline: true},
-                    { name: 'Restriction Ends', value: `~~${moment(old_data.stop).format('M-DD, HH:mm')} Eastern~~`, inline: true},
-                    { name: 'Altitude', value: `~~${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}~~`, inline: true}
+                    { name: 'NOTAM ID', value: `${old_data.id}`, inline: true},
+                    { name: 'Restriction Begins', value: `${moment(old_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
+                    { name: 'Restriction Ends', value: `${moment(old_data.stop).format('M-DD, HH:mm')} Eastern`, inline: true},
+                    { name: 'Altitude', value: `${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
                 )
                 .setThumbnail(new_data.image)
                 .setTimestamp()
         } else {
+            format_day = `${moment(new_data.start).format('dddd')} the ${moment(new_data.start).format('Do')}`;
             var msg = new Discord.MessageEmbed()
                 .setColor('#ffff00')
-                .setTitle(`Notice to Airmen Modified`)
+                .setTitle(`NOTAM Modified for ${format_day}`)
                 .setURL(new_data.link)
                 .setAuthor('Federal Aviation Administration (FAA)', 'https://i.gyazo.com/ab618db4d6b3a93650aa4c786bb56567.png', 'https://www.faa.gov/')
-                .setDescription(`<@&${ROLES['TFR']}>\nAx existing Temporary Flight Restriction (TFR) has been modified.`)
+                .setDescription(`An existing Temporary Flight Restriction (TFR) has been modified.`)
                 .addFields(
                     { name: 'NOTAM ID', value: new_data.id, inline: true},
                     { name: 'Restriction Begins', value: old_data.start === new_data.start ? `${moment(new_data.start).format('M-DD, HH:mm')} Eastern` : `~~${moment(old_data.start).format('M-DD, HH:mm')}~~\n${moment(new_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
@@ -158,7 +162,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setTimestamp()
         }
         for(let i = 0; i < chans.length; i++) {
-            await SpaceBot.sendMessage(chans[i], msg);
+            await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['TFR']}>`, embed: msg});
             await new Promise((resolve, _) => setTimeout(resolve, 1000));
         }
     } else if(type === 'closure') {
@@ -168,7 +172,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setTitle(`Road Closure Posted`)
                 .setURL('https://cameroncounty.us/spacex/')
                 .setAuthor('Highway 4 - Cameron County', 'https://www.cameroncounty.us/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png', 'https://cameroncounty.us/spacex/')
-                .setDescription(`<@&${ROLES['Closure']}>\nA new closure of Highway 4 in Boca Chica has been posted.`)
+                .setDescription(`A new closure of Highway 4 in Boca Chica has been posted.`)
                 .addFields(
                     { name: 'Day', value: moment(new_data.day, 'YYYY-MM-DD').format('dddd, M-DD'), inline: true},
                     { name: 'Type', value: new_data.type, inline: true},
@@ -183,7 +187,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setTitle(`Road Closure Modification`)
                 .setURL('https://cameroncounty.us/spacex/')
                 .setAuthor('Highway 4 - Cameron County', 'https://www.cameroncounty.us/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png', 'https://cameroncounty.us/spacex/')
-                .setDescription(`<@&${ROLES['Closure']}>\nDetails surrounding a closure of Highway 4 in Boca Chica have changed.`)
+                .setDescription(`Details surrounding a closure of Highway 4 in Boca Chica have changed.`)
                 .addFields(
                     { name: 'Day', value: moment(new_data.day, 'YYYY-MM-DD').format('dddd, M-DD'), inline: true},
                     { name: 'Type', value: old_data.type === new_data.type ? new_data.type : `~~${old_data.type}~~\n${new_data.type}`, inline: true},
@@ -194,7 +198,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setTimestamp()
         }
         for(let i = 0; i < chans.length; i++) {
-            await SpaceBot.sendMessage(chans[i], msg);
+            await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['Closure']}>`, embed: msg});
             await new Promise((resolve, _) => setTimeout(resolve, 1000));
         }
     } else if(type === 'weather') {
@@ -241,8 +245,8 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setColor('#ff0000')
                 .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
                 .setURL('https://spaceflightnow.com/launch-schedule/')
-                .setAuthor(`New <@&${ROLES['Launch']}> Posted! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/`)
-                .setDescription(`${affils}\n${new_data.description}`)
+                .setAuthor('New Launch Posted! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
+                .setDescription(new_data.description)
                 .addFields(
                     { name: 'Launch Date', value: new_disp_date, inline: true},
                     { name: 'Launch Time', value: new_disp_time, inline: true},
@@ -257,8 +261,8 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setColor('#ffff00')
                 .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
                 .setURL('https://spaceflightnow.com/launch-schedule/')
-                .setAuthor(`<@&${ROLES['Launch']}> Update! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/`)
-                .setDescription(`${affils}\n${new_data.description}`)
+                .setAuthor('Launch Update! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
+                .setDescription(new_data.description)
                 .addFields(
                     { name: 'Launch Date', value: old_disp_date === new_disp_date ? new_disp_date : `~~${old_disp_date}~~\n${new_disp_date}`, inline: true},
                     { name: 'Launch Time', value: old_disp_time === new_disp_time ? new_disp_time : `~~${old_disp_time}~~\n${new_disp_time}`, inline: true},
@@ -267,7 +271,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setTimestamp()
         }
         for(let i = 0; i < chans.length; i++) {
-            await SpaceBot.sendMessage(chans[i], msg);
+            await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['Launch']}>\n${affils}`, embed: msg});
             await new Promise((resolve, _) => setTimeout(resolve, 2000));
         }
     }
