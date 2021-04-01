@@ -134,18 +134,36 @@ async function getClosures() {
                 return {hr, min};
             });
 
+        if(stop === undefined) {
+            let datestr = date.toString().replace('.', '');
+            let [start, stop] = time.toString().replace('\n', '').replace('<br />', '').replace(',,', ' ').replace('&#8211;', '-').replace('&#8211;', '-').replace('a.m.', 'am').replace('a.m.', 'am').replace('p.m.', 'pm').replace('p.m.', 'pm').split(' to ');
+            const m = moment(datestr, 'dddd, MMMM DD, YYYY').hour(23).tz('America/Chicago');
 
-        let datestr = date.toString().replace('.', '');
-        datestr = datestr.substring(datestr.indexOf(', ') + 1, datestr.length);
-        const m = moment(datestr, 'MMM DD, YYYY').hour(23).tz('America/Chicago');
-        const m_start = moment(m).hour(start.hr).minute(start.min);
-        const m_stop = moment(m).hour(stop.hr).minute(stop.min);
-        return {
-            start: m_start,
-            status: status.toString().replace('<br />', '').replace(',,', ' ').replace(',', '').replace('\n', ' '),
-            stop: m_stop,
-            type: type.toString().replace(',<br />,', ' '),
-        };
+            start = moment(start, 'MMMM DD, YYYY - h:mm a');
+            stop = moment(stop, 'MMMM DD, YYYY - h:mm a');
+            const m_start = moment(m).hour(start.hour()).minute(start.minute());
+            const m_stop = moment(m).day(m_start.day() + 1).hour(stop.hour()).minute(stop.minute());
+            return {
+                start: m_start,
+                status: status.toString().replace('<br />', '').replace(',,', ' ').replace(',', '').replace('\n', ' '),
+                stop: m_stop,
+                type: type.toString().replace(',<br />,', ' ').replace(',,', ' '),
+            };
+        } else {
+            let datestr = date.toString().replace('.', '');
+            datestr = datestr.substring(datestr.indexOf(', ') + 1, datestr.length);
+            const m = moment(datestr, 'MMM DD, YYYY').hour(23).tz('America/Chicago');
+            const m_start = moment(m).hour(start.hr).minute(start.min);
+            const m_stop = moment(m).hour(stop.hr).minute(stop.min);
+            return {
+                start: m_start,
+                status: status.toString().replace('<br />', '').replace(',,', ' ').replace(',', '').replace('\n', ' '),
+                stop: m_stop,
+                type: type.toString().replace(',<br />,', ' '),
+            };
+        }
+
+
     });
 
     return closures.filter(_ => _);
@@ -211,6 +229,8 @@ function cleanTime(date, time) {
 
             if(type === 'unknown') throw new Error('unknown date format "' + time + '"')
 
+            if(month === null || day === null)
+                return { type: 'undecided', start: date, stop: null };
             var [start, stop] = [null, null];
             if(type === 'window') {
                 //  Need to parse out start and stop times
@@ -267,7 +287,7 @@ async function getLaunches() {
         let affiliations = getAffiliations(description);
 
         let cleaned_time = cleanTime(date, launch_win);
-
+        
         launches.push({
             mission,
             affiliations,
