@@ -13,7 +13,7 @@ block content
             | .
         h6 All launch dates and times are auto-adjusted to your timezone. Only future launches are displayed.
     div(style="display: flex; justify-content: space-around; flex-wrap: wrap")
-        div(style="max-width: 40%;")
+        div(style="max-width: 40%; min-width: 325px;")
             h3 Scheduled launches
             h6 These have been assigned a specific launch day and time
             for launch in exact
@@ -27,7 +27,7 @@ block content
                     text(style="color: #55f; font-weight: bold;")=launch.affiliations.join(', ')
                     br
                     text(style="color: #ddd")=launch.description
-        div
+        div(style="max-width: 40%; min-width: 325px;")
             h3 Planned launches
             h6 These are slated to happen, but have not been formally scheduled yet
             for launch in undecided

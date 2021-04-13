@@ -264,11 +264,15 @@ async function getLaunches() {
 
     let mission_pieces = launch_container.findAll('div');
     let launches = [];
+    let missions = [];
     for(let i = 0; i < mission_pieces.length - 2; i += 3) {
         // Date + vehicle + mission are in the first block
         let [ date, vmiss ] = mission_pieces[i].findAll('span')
             .map(_ => he.decode(_.contents.toString()));
         let [ vehicle, mission ] = vmiss.split(' • ');
+
+        if(missions.indexOf(mission) > -1) continue;
+        missions.push(mission);
 
         // Window + site are in the second block
         let [ launch_win, launch_site ] = mission_pieces[i + 1].findAll('span');
@@ -287,7 +291,7 @@ async function getLaunches() {
         let affiliations = getAffiliations(description);
 
         let cleaned_time = cleanTime(date, launch_win);
-        
+
         launches.push({
             mission,
             affiliations,
