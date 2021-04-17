@@ -94,7 +94,6 @@ app.get('/launches', async (req, res) => {
     launches.undecided = launches.undecided.sort((a, b) => {
         var ai = a.time.start;
         var bi = b.time.start;
-        console.log(ai, bi);
         const aFirst = -1;
         const bFirst = aFirst * -1;
         if(ai === 'TBD') return bFirst;
@@ -124,7 +123,7 @@ app.get('/launches', async (req, res) => {
             if(a_hasDay !== false && b_hasDay === false) return aFirst;
             if(a_hasDay === false && b_hasDay !== false) return bFirst;
             if(a_hasDay !== false && b_hasDay !== false) {
-                if(a_hasDay <= b_hasDay) return aFirst;
+                if(parseInt(a_hasDay) <= parseInt(b_hasDay)) return aFirst;
                 return bFirst;
             }
             return 0;
@@ -138,52 +137,51 @@ app.get('/launches', async (req, res) => {
             return bFirst;
         }
         if(a_isMonth !== false && b_isQuarter !== false) {
-            if(b_isQuarter * 4 - 3 <= a_isMonth) return bFirst;
+            if(b_isQuarter * 4 - 3 <= mos.indexOf(a_isMonth)) return bFirst;
             return aFirst;
         }
         if(a_isQuarter !== false && b_isMonth !== false) {
-            if(a_isQuarter * 4 - 3 <= b_isMonth) return aFirst;
+            if(a_isQuarter * 4 - 3 <= mos.indexOf(b_isMonth)) return aFirst;
             return bFirst;
         }
 
         // Somewhere in here I need to add something to separate years.
         var a_yearPos = /^\w*-\d{4}$/.test(ai) ? /^(\w*)-\d{4}$/.exec(ai)[1] : false;
         var b_yearPos = /^\w*-\d{4}$/.test(bi) ? /^(\w*)-\d{4}$/.exec(bi)[1] : false;
-        console.log("Y", a_yearPos, b_yearPos);
 
         if(a_yearPos === 'Early') {
-            if(b_isMonth !== false) return b_isMonth > 3 ? aFirst : bFirst;
+            if(b_isMonth !== false) return mos.indexOf(b_isMonth) > 3 ? aFirst : bFirst;
             if(b_isQuarter !== false) return b_isQuarter > 1 ? aFirst : bFirst;
             if(b_yearPos !== 'Early') return aFirst;
             else return bFirst;
         }
         if(a_yearPos === 'Mid') {
-            if(b_isMonth !== false) return b_isMonth > 6 ? aFirst : bFirst;
+            if(b_isMonth !== false) return mos.indexOf(b_isMonth) > 6 ? aFirst : bFirst;
             if(b_isQuarter !== false) return b_isQuarter > 2 ? aFirst : bFirst;
             if(b_yearPos === 'Mid' || b_yearPos === 'Late') return aFirst;
             else return bFirst;
         }
         if(a_yearPos === 'Late') {
-            if(b_isMonth !== false) return b_isMonth > 9 ? aFirst : bFirst;
+            if(b_isMonth !== false) return mos.indexOf(b_isMonth) > 9 ? aFirst : bFirst;
             if(b_isQuarter !== false) return b_isQuarter > 3 ? aFirst : bFirst;
             if(b_yearPos !== 'Late') return bFirst;
             else return aFirst;
         }
 
         if(b_yearPos === 'Early') {
-            if(a_isMonth !== false) return a_isMonth > 3 ? bFirst : aFirst;
+            if(a_isMonth !== false) return mos.indexOf(a_isMonth) > 3 ? bFirst : aFirst;
             if(a_isQuarter !== false) return a_isQuarter > 1 ? bFirst : aFirst;
             if(a_yearPos !== 'Early') return bFirst;
             else return aFirst;
         }
         if(b_yearPos === 'Mid') {
-            if(a_isMonth !== false) return a_isMonth > 6 ? bFirst : aFirst;
+            if(a_isMonth !== false) return mos.indexOf(a_isMonth) > 6 ? bFirst : aFirst;
             if(a_isQuarter !== false) return a_isQuarter > 2 ? bFirst : aFirst;
             if(a_yearPos === 'Mid' || a_yearPos === 'Late') return bFirst;
             else return aFirst;
         }
         if(b_yearPos === 'Late') {
-            if(a_isMonth !== false) return a_isMonth > 9 ? bFirst : aFirst;
+            if(a_isMonth !== false) return mos.indexOf(a_isMonth) > 9 ? bFirst : aFirst;
             if(a_isQuarter !== false) return a_isQuarter > 3 ? bFirst : aFirst;
             if(a_yearPos !== 'Late') return aFirst;
             else return bFirst;

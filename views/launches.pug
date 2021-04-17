@@ -18,7 +18,8 @@ block content
             h6 These have been assigned a specific launch day and time
             for launch in exact
                 div(style="margin: 10px; padding: 10px; border: 2px solid #0ca; border-radius: 8px;")
-                    if launch.stop
+                    div(style="display:none;")=JSON.stringify(launch)
+                    if launch.time.stop
                         h6.doubleLaunchHeader(style="border-bottom: 3px dashed #0ca; padding 5px;")=launch.time.start + '~' + launch.time.stop
                     else
                         h6.singleLaunchHeader(style="border-bottom: 3px dashed #0ca; padding: 5px;")=launch.time.start
