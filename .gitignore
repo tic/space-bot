@@ -116,3 +116,6 @@ dist
 .pnp.*
 
 .env
+
+testing/**
+stanford-ner/**
