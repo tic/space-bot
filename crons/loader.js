@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 const JSSoup = require('jssoup').default;
-const moment = require('moment');
-require('moment-timezone');
+const moment = require('moment-timezone');
 const he = require('he');
 const { WEATHER, NOTAMS, NOTAMBASE, CLOSURES, LAUNCHES } = process.env;
 const AFFILIATIONS = [
@@ -30,7 +29,10 @@ function getNOTAMURL(id) {
     return `${NOTAMBASE}/save_pages/detail_${id.replace('/', '_')}.html`;
 }
 async function getNOTAMs() {
-    const content = await (await fetch(NOTAMS, {method: 'POST'})).text();
+    const content = await (await fetch(NOTAMS, {method: 'POST'}).catch(err => {
+        console.error(err);
+        return {text: () => ''};
+    })).text();
     const soup = new JSSoup(content);
     let [ notam_table ] = soup.findAll('table')
         .filter(({attrs: {width}}) => width == 970);
@@ -47,7 +49,10 @@ async function getNOTAMs() {
             notam_id = (new JSSoup(notam_id)).find('u').contents.toString()
             let link = getNOTAMURL(notam_id);
 
-            const tfr_data = await (await fetch(link)).text();
+            const tfr_data = await (await fetch(link).catch(err => {
+                console.error(err);
+                return {text: () => ''};
+            })).text();
             const tfr_soup = new JSSoup(tfr_data);
 
             let detail_table = tfr_soup.findAll('table')
@@ -105,8 +110,38 @@ async function getNOTAMs() {
     return notams;
 }
 
+function replaceAll(str, term, replacement) {
+    while(str.indexOf(term) > -1) str = str.replace(term, replacement);
+    return str;
+}
+async function learn(args) {
+    let script_results = new Promise((resolve, reject) => {
+        var { PythonShell } = require('python-shell');
+        const SCRIPT_PATH = 'extract_info.py';
+
+        var options = {
+            mode: 'text',
+            args, //['-s "10:30 a.m. to 11:30 p.m."']
+        };
+
+        const duration_timeout = setTimeout(() => reject('{error: true, message: maximum time exceeded}'), args.length * 5000);
+
+        PythonShell.run(SCRIPT_PATH, options, function (err, results) {
+            clearTimeout(duration_timeout);
+            if (err) reject(err);
+            // results is an array consisting of messages collected during execution
+            resolve(results);
+        });
+    });
+
+    return await script_results;
+}
 async function getClosures() {
-    const content = await (await fetch(CLOSURES)).text();
+
+    const content = await (await fetch(CLOSURES).catch(err => {
+        console.error(err);
+        return {text: () => ''};
+    })).text();
     const soup = new JSSoup(content);
     // body of the first table
     let closure_table = soup.find('table').find('tbody');
@@ -114,57 +149,45 @@ async function getClosures() {
     .map(row => {
         let [type, date, time, status] = row.findAll('td')
             .map(cell => cell.contents);
-        if(type == '' || date == '' || time == '' || status == '') {
-            console.log('Empty field on closure page!')
-            return null;
+        if(type == '' || date == '' || time == '' || status == '') return null;
+        return {
+            type: type.toString(),
+            date: date.toString(),
+            time: time.toString(),
+            status: status.toString()
         }
-        let [start, stop] = time.toString().split(' to ')
-            .map(time => {
-                time = time.replace(' ', '');
-                const ttype = time.substring(time.length - 2, time.length);
-                const ttype2 = time.substring(time.length - 4, time.length);
-                if(ttype === "am" || ttype2 === "a.m.") {
-                    // AM time
-                    var [hr, min] = time.split(':').map(t => parseInt(t));
-                } else {
-                    // PM time
-                    var [hr, min] = time.split(':').map(t => parseInt(t));
-                    if(hr !== 12) hr += 12;
-                }
-                return {hr, min};
-            });
-
-        if(stop === undefined) {
-            let datestr = date.toString().replace('.', '');
-            let [start, stop] = time.toString().replace('\n', '').replace('<br />', '').replace(',,', ' ').replace('&#8211;', '-').replace('&#8211;', '-').replace('a.m.', 'am').replace('a.m.', 'am').replace('p.m.', 'pm').replace('p.m.', 'pm').split(' to ');
-            const m = moment(datestr, 'dddd, MMMM DD, YYYY').hour(23).tz('America/Chicago');
-
-            start = moment(start, 'MMMM DD, YYYY - h:mm a');
-            stop = moment(stop, 'MMMM DD, YYYY - h:mm a');
-            const m_start = moment(m).hour(start.hour()).minute(start.minute());
-            const m_stop = moment(m).day(m_start.day() + 1).hour(stop.hour()).minute(stop.minute());
-            return {
-                start: m_start,
-                status: status.toString().replace('<br />', '').replace(',,', ' ').replace(',', '').replace('\n', ' '),
-                stop: m_stop,
-                type: type.toString().replace(',<br />,', ' ').replace(',,', ' '),
-            };
-        } else {
-            let datestr = date.toString().replace('.', '');
-            datestr = datestr.substring(datestr.indexOf(', ') + 1, datestr.length);
-            const m = moment(datestr, 'MMM DD, YYYY').hour(23).tz('America/Chicago');
-            const m_start = moment(m).hour(start.hr).minute(start.min);
-            const m_stop = moment(m).hour(stop.hr).minute(stop.min);
-            return {
-                start: m_start,
-                status: status.toString().replace('<br />', '').replace(',,', ' ').replace(',', '').replace('\n', ' '),
-                stop: m_stop,
-                type: type.toString().replace(',<br />,', ' '),
-            };
-        }
-
-
     });
+
+    args = [];
+    for(let i = 0; i < closures.length; i++) {
+        args.push(`-s ${closures[i].time}`);
+        args.push(`-s ${closures[i].date}`);
+    }
+
+    let smart_times = (await learn(args)).map(result => JSON.parse(replaceAll(result, "'", '"').replace(/\]\[/g,"],[")));
+    if(smart_times.error) return [];
+    for(let i = 0; i < smart_times.length; i += 2) {
+        delete closures[i / 2].time;
+        delete closures[i / 2].date;
+        closures[i / 2].status = replaceAll(replaceAll(replaceAll(replaceAll(closures[i / 2].status, '<br />', ' '), ',', ''), '\n', ''), '&amp;', '&');
+        const m = moment(smart_times[i + 1][0], 'dddd, MMMM DD, YYYY').hour(23).tz('America/Chicago');
+        const [start, stop] = smart_times[i];
+        if(start[1] === 'TIME') {
+            const detected = moment(start[0], 'h:mm a');
+            closures[i / 2].start = moment(m).hour(detected.hour()).minute(detected.minute());
+        }
+        if(stop[1] === 'TIME') {
+            const detected = moment(stop[0], 'h:mm a');
+            closures[i / 2].stop = moment(m).hour(detected.hour()).minute(detected.minute());
+        }
+
+        closures[i / 2] = {
+            start: closures[i / 2].start,
+            status: closures[i / 2].status,
+            stop: closures[i / 2].stop,
+            type: closures[i / 2].type
+        }
+    }
 
     return closures.filter(_ => _);
 }
@@ -223,6 +246,7 @@ function cleanTime(date, time) {
         try {
             let type = 'unknown';
             if(/^\d{4} GMT/.test(time)) type = 'exact';
+            else if(/^\d{4}:\d{2} GMT/.test(time)) type = 'exact-second';
             else if(/\d{4}-\d{4} GMT/.test(time)) type = 'window';
             else if(/Approx. \d{4}/i.test(time)) type = 'approximate';
             else if(/\d{4} or \d{4} GMT/i.test(time)) type = 'flexible'
@@ -242,6 +266,11 @@ function cleanTime(date, time) {
                 cap = /(\d{4}) or (\d{4}) GMT/i.exec(time);
                 start = detectTime(cap[1], day, month);
                 stop = detectTime(cap[2], day, month);
+            } else if(type === 'exact-second') {
+                cap = /(\d{4}):(\d{2}) GMT/.exec(time);
+                start = detectTime(cap[1], day, month);
+                start = moment(start).second(parseInt(cap[2])).format();
+                type ='exact';
             } else {
                 // Just need to parse out the start time
                 cap = /(\d{4}) GMT/.exec(time);
@@ -256,7 +285,10 @@ function cleanTime(date, time) {
     }
 }
 async function getLaunches() {
-    const content = await (await fetch(LAUNCHES)).text();
+    const content = await (await fetch(LAUNCHES).catch(err => {
+        console.error(err);
+        return {text: () => ''};
+    })).text();
     const soup = new JSSoup(content);
     let launch_container = soup.find('article')
         .nextElement
