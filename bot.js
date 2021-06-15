@@ -133,7 +133,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             var msg = new Discord.MessageEmbed()
                 .setColor('#ff0000')
                 .setTitle(`NOTAM for Removed for ${format_day}`)
-                .setURL(new_data.link)
+                .setURL(old_data.link)
                 .setAuthor('Federal Aviation Administration (FAA)', 'https://i.gyazo.com/ab618db4d6b3a93650aa4c786bb56567.png', 'https://www.faa.gov/')
                 .setDescription(`An existing Temporary Flight Restriction (TFR) was removed. The previous details for the TFR are shown below.`)
                 .addFields(
@@ -230,12 +230,17 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
     } else if(type === 'launch') {
 
         function getDisplayTime(time) {
-            if(time.type === 'undecided') return [time.start, 'TBD'];
-            start_adj = moment(time.start).local();
-            if(time.type === 'exact') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern)'];
-            if(time.type === 'approximate') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
-            if(time.type === 'window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Do)')} (eastern)`];
-            return [time.start, 'TBD'];
+            try {
+                if(time.type === 'undecided') return [time.start || 'TBD', 'TBD'];
+                start_adj = moment(time.start).local();
+                if(time.type === 'exact') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern)'];
+                if(time.type === 'approximate') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
+                if(time.type === 'window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Do)')} (eastern)`];
+            } catch(err) {
+                console.log(`Caught error in getDisplayTime() (bot.js line 232)\n${err}`);
+                return ['Error', 'Error']
+            }
+            return [time.start || 'TBD', 'TBD'];
         }
 
         var affils = `${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`;

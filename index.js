@@ -166,9 +166,9 @@ SpaceBot.on("ready", () => {
     // During development, doing this on every restart produces an unnecessary
     // amount of message spam in Discord. :(
     // updateWeather();
-    // setTimeout(() => updateNOTAMs(true), 1000);
-    // setTimeout(() => updateClosures(true), 6000);
-    // setTimeout(() => updateLaunches(true), 1000);
+    setTimeout(() => updateNOTAMs(true), 1000);
+    setTimeout(() => updateClosures(true), 6000);
+    setTimeout(() => updateLaunches(true), 11000);
     // Channel topics won't change the "updated at __:__" on the first run
 });
 

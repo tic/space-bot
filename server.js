@@ -22,6 +22,7 @@ app.get('/', async (req, res) => {
     } catch(err) {}
 
     res.render('today', {
+        title: 'Today\'s Activities | Starbase',
         weather: weather ?? {
             wind: 0,
             humidity: '__',
@@ -43,6 +44,7 @@ app.get('/notams', async (req, res) => {
     } catch(err) {}
 
     res.render('notams', {
+        title: 'TFRs | Starbase',
         notams: notams ?? [],
     });
 });
@@ -59,6 +61,7 @@ app.get('/closures', async (req, res) => {
     } catch(err) { var closures = []; }
 
     res.render('closures', {
+        title: 'Closures | Starbase',
         closures: closures ?? [],
     });
 });
@@ -192,6 +195,7 @@ app.get('/launches', async (req, res) => {
     });
 
     res.render('launches', {
+        title: 'Upcoming Launches',
         undecided: launches.undecided,
         exact: launches.exact,
     });
