@@ -164,7 +164,7 @@ async function getClosures() {
         args.push(`-s ${closures[i].date}`);
     }
 
-    let smart_times = (await learn(args)).map(result => JSON.parse(replaceAll(result, "'", '"').replace(/\]\[/g,"],[")));
+    let smart_times = (await learn(args)).filter((_, i) => i % 2).map(result => JSON.parse(replaceAll(result, "'", '"').replace(/\]\[/g,"],[")));
     if(smart_times.error) return [];
     for(let i = 0; i < smart_times.length; i += 2) {
         delete closures[i / 2].time;
