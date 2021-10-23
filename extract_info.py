@@ -47,7 +47,9 @@ from sys import argv
 from sys import stderr
 
 IS_WINDOWS = True if system() == 'Windows' else False
-JAVA_BIN_PATH = 'java.exe' if IS_WINDOWS else 'java'
+
+# originally just 'java'
+JAVA_BIN_PATH = 'java.exe' if IS_WINDOWS else '/usr/lib/jvm/java-8-openjdk-amd64/bin/java'
 STANFORD_NER_FOLDER = 'stanford-ner'
 
 
@@ -57,12 +59,14 @@ def arg_parse():
     arg_p.add_argument('-v', '--verbose', action='store_true')
     return arg_p
 
+
 #######################
 def custom_arg_parse():
     ap = ArgumentParser('Stanford NER Python Wrapper with updates for quality of life')
     ap.add_argument('-s', '--string', action='append', required=True)
     return ap
 #######################
+
 
 def debug_print(log, verbose):
     if verbose:
@@ -86,6 +90,7 @@ def stanford_ner(filename, verbose=True, absolute_path=None):
     else:
         filename = '../{}'.format(filename)
 
+    print(JAVA_BIN_PATH)
     command += 'cd {}; {} -mx1g -cp "*:lib/*" edu.stanford.nlp.ie.NERClassifierCombiner ' \
                '-ner.model classifiers/english.all.3class.distsim.crf.ser.gz ' \
                '-outputFormat tabbedEntities -textFile {} > ../{}' \
