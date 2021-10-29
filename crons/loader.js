@@ -75,17 +75,9 @@ async function getNOTAMs() {
             if(m_stop.hour() === 0 && details[details.length - 3].indexOf('1200') > -1)
                 m_stop.hour(12);
 
-            let [ altitude ] = detail_table.findAll('tr')
-                .map(tr => {
-                    let text = tr.find('font').contents.toString();
-                    if(text.indexOf('Altitude') > -1) {
-                        let re = text.match(/(\d+) feet MSL/);
-                        if(re) return re[1];
-                        return 'Unlimited';
-                    }
-                    return null;
-                })
-                .filter(_ => _);
+            let rawAltitude = detail_table.contents.toString().match(/(\d+) feet MSL/);
+            let altitude = 'Unlimited';
+            if(rawAltitude) altitude = rawAltitude[1];
 
             let image = tfr_soup.findAll('table')
                 .map(table => {
@@ -96,7 +88,7 @@ async function getNOTAMs() {
 
             return {
                 id: notam_id,
-                altitude: altitude ? altitude : 'N/A',
+                altitude: altitude ?? 'N/A',
                 image: `${NOTAMBASE}${image}`,
                 link,
                 start: m_start,
