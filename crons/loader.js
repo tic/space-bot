@@ -192,10 +192,15 @@ function getAffiliations(description) {
 function cleanTime(date, time) {
     const MonthAbbrevs = {'Jan': 'January', 'Feb': 'February', 'Mar': 'March', 'Apr': 'April', 'Jun': 'June', 'Jul': 'July', 'Aug': 'August', 'Sept': 'September', 'Oct': 'October', 'Nov': 'November', 'Dec': 'December'};
     function detectTime(time, day, month) {
-        const t = parseInt(time);
+        let sec = 0;
+        var t = parseInt(time);
+        if(time.indexOf(":") > -1) {
+            t = parseInt(time.split(":")[0]);
+            sec = parseInt(time.split(":")[1]);
+        }
         const hour = parseInt(t / 100);
         const min = t % 100;
-        let m = moment().tz('GMT').month(month).date(day).hour(hour).minute(min).second(0);
+        let m = moment().tz('GMT').month(month).date(day).hour(hour).minute(min).second(sec);
         return m.format();
     }
 
@@ -240,11 +245,11 @@ function cleanTime(date, time) {
             if(/^\d{4} GMT/.test(time)) type = 'exact';
             else if(/^\d{4}:\d{2} GMT/.test(time)) type = 'exact-second';
             else if(/\d{4}-\d{4} GMT/.test(time)) type = 'window';
+            else if(/^\d{4}:\d{2}-\d{4}:\d{2} GMT/.test(time)) type = 'exact-second-window';
             else if(/Approx. \d{4}/i.test(time)) type = 'approximate';
             else if(/\d{4} or \d{4} GMT/i.test(time)) type = 'flexible'
 
             if(type === 'unknown') throw new Error('unknown date format "' + time + '"')
-
             if(month === null || day === null)
                 return { type: 'undecided', start: date, stop: null };
             var [start, stop] = [null, null];
@@ -263,9 +268,17 @@ function cleanTime(date, time) {
                 start = detectTime(cap[1], day, month);
                 start = moment(start).second(parseInt(cap[2])).format();
                 type ='exact';
+            } else if(type === 'exact-second-window') {
+                //  Need to parse out start and stop times
+                cap = /^(\d{4}:\d{2})-(\d{4}:\d{2}) GMT/.exec(time);
+                start = detectTime(cap[1], day, month);
+                stop = detectTime(cap[2], day, month);
             } else {
                 // Just need to parse out the start time
                 cap = /(\d{4}) GMT/.exec(time);
+                if(!cap) {
+                    cap = /(\d{4}:\d{2}) GMT/.exec(time);
+                }
                 start = detectTime(cap[1], day, month);
             }
 

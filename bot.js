@@ -234,8 +234,10 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 if(time.type === 'undecided') return [time.start || 'TBD', 'TBD'];
                 start_adj = moment(time.start).local();
                 if(time.type === 'exact') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern)'];
+                if(time.type === 'exact-second') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm:ss') + ' (eastern)'];
                 if(time.type === 'approximate') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
                 if(time.type === 'window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Do)')} (eastern)`];
+                if(time.type === 'exact-second-window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm:ss')}-${moment(time.stop).local().format('HH:mm:ss (MMM Do)')} (eastern)`];
             } catch(err) {
                 console.log(`Caught error in getDisplayTime() (bot.js line 232)\n${err}`);
                 return ['Error', 'Error']
