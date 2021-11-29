@@ -30,6 +30,9 @@ var UPDATE_CHANNELS = {
     ],
     closure: [
         '801553695560564756',
+    ],
+    'launch-reminder': [
+        '910711567950172220',
     ]
 }
 var CHANNEL_TOPICS = {
@@ -277,6 +280,26 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 )
                 .setTimestamp()
         }
+        for(let i = 0; i < chans.length; i++) {
+            await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['Launch']}>\n${affils}`, embed: msg});
+            await new Promise((resolve, _) => setTimeout(resolve, 2000));
+        }
+    } else if(type === 'launch-reminder') {
+        const imminent = old_data === true;
+        var affils = `${imminent ? '**Imminent Launch Reminder**' : 'Upcoming Launch Reminder'}\n${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`;
+        const [lDate, lTime] = getDisplayTime(new_data.time);
+        var msg = new Discord.MessageEmbed()
+            .setColor('#f70062')
+            .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
+            .setURL('https://spaceflightnow.com/launch-schedule/')
+            .setAuthor((imminent ? 'Imminent' : 'Upcoming') + ' Launch! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
+            .setDescription(new_data.description)
+            .addFields(
+                { name: 'Launch Date', value: lDate, inline: true},
+                { name: 'Launch Time', value: lTime, inline: true},
+                { name: 'Launch Site', value: new_data.launch_site, inline: false}
+            )
+            .setTimestamp()
         for(let i = 0; i < chans.length; i++) {
             await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['Launch']}>\n${affils}`, embed: msg});
             await new Promise((resolve, _) => setTimeout(resolve, 2000));

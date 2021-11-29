@@ -13,6 +13,11 @@ var WEATHER_DELAY = 3 * 60 * 1000 - 1000;  // Every 2 minutes, 59 seconds
 var NOTAM_DELAY = 3 * 60 * 1000 - 1000;    // Every 2 minutes, 59 seconds
 var CLOSURE_DELAY = 3 * 60 * 1000 - 1000;  // Every 2 minutes, 59 seconds
 var LAUNCH_DELAY = 7 * 60 * 1000 - 1000;   // Every 6 minutes, 59 seconds
+var IMMINENT_LAUNCH_DELAY = 20 * 60 * 1000 - 1000 // Every 19 minutes, 59 seconds
+
+// Calibration parameters
+var LAUNCH_REMINDER_TIME = 24 * 60 * 60 * 1000; // Post a reminder 24h ahead of a launch
+var LAUNCH_IMMINENT_TIME = 3 * 60 * 60 * 1000; // Post a second reminder 3h ahead of a launch
 
 function time() {
     return new Date().toLocaleTimeString("en-US", {hour12: false, day: "2-digit", month: "2-digit"})
@@ -155,6 +160,43 @@ async function updateLaunches(skipTopicUpdate) {
     SpaceBot.__updates.launch = moment().format('HH:mm');
     console.log(`[${time()}] [MAIN] Launch update complete.`);
 }
+async function fetchImminentLaunches() {
+    await EnterMongo();
+    let collection = Mongo.db("launches").collection("launches");
+    let cursor = collection.find({
+        "time.type": {
+            $exists: true,
+            $not: {
+                $eq: "undecided"
+            }
+        }
+    });
+
+    const now = moment();
+    const remSubImm = LAUNCH_REMINDER_TIME - IMMINENT_LAUNCH_DELAY;
+    const immSubImm = LAUNCH_IMMINENT_TIME - IMMINENT_LAUNCH_DELAY;
+    while(await cursor.hasNext()) {
+        const launch_data = await cursor.next();
+        const timedelta = moment(launch_data.time.start) - now;
+
+        // an alert is triggered if:
+        //  a) a launch is less than LAUNCH_REMINDER_TIME in the future **AND** is at least (LAUNCH_REMINDER_TIME - IMMINENT_LAUNCH_DELAY) in the future
+        //  b) a launch is less than LAUNCH_IMMINENT_TIME in the future **AND** is at least (LAUNCH_IMMINENT_TIME - IMMINENT_LAUNCH_DELAY) in the future
+        const remRem = (timedelta < LAUNCH_REMINDER_TIME && timedelta > remSubImm);
+        const immRem = (timedelta < LAUNCH_IMMINENT_TIME && timedelta > immSubImm);
+        const needToAlert = remRem || immRem;
+
+        if(needToAlert) {
+            await postUpdate({
+                type: "launch-reminder",
+                old_data: immRem,
+                new_data: launch_data
+            });
+        }
+    }
+
+    await ExitMongo();
+}
 
 console.log('[ENV] Loading discord bot');
 const { SpaceBot, UPDATE_CHANNELS, CHANNEL_TOPICS } = require('./bot');
@@ -169,6 +211,7 @@ SpaceBot.on("ready", () => {
     setTimeout(() => updateNOTAMs(true), 1000);
     setTimeout(() => updateClosures(true), 6000);
     setTimeout(() => updateLaunches(true), 11000);
+    setTimeout(() => fetchImminentLaunches(true), 2500);
     // Channel topics won't change the "updated at __:__" on the first run
 });
 
@@ -233,3 +276,8 @@ var LAUNCH_INTERVAL = setInterval(() => {
     console.log(`[${time()}] [CRON] Starting launch update...`);
     updateLaunches();
 }, LAUNCH_DELAY);
+
+var IMMINENT_LAUNCH_INTERVAL = setInterval(() => {
+    console.log(`[${time()}] [CRON] Starting imminent launch check...`);
+    fetchImminentLaunches();
+}, IMMINENT_LAUNCH_DELAY);
