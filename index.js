@@ -40,7 +40,7 @@ async function updateWeather() {
             old: result.value,
             new: weather
         });
-        console.log(`[${time()}] [MAIN] Weather update complete.`);
+        console.log(`[${time()}] [MAIN] Weather update complete. (Started ${started})`);
     } catch(err) {
         console.log(`[${time()}] [ERR] !! Error in weather update (started ${started}):`);
         console.error(err);
