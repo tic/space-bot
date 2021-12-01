@@ -28,7 +28,7 @@ console.log('[ENV] Loading database functions');
 const { Mongo, EnterMongo, ExitMongo } = require('./mongo');
 // Weather is unconditionally updated!
 async function updateWeather() {
-    const started = moment().format('DD HH:mm');
+    const started = moment().format('DD HH:mm:ss');
     try {
         let weather = await getWeather();
         await EnterMongo();
@@ -51,7 +51,7 @@ async function updateWeather() {
 }
 // Update callbacks are executed only if there is something to report
 async function updateNOTAMs(skipTopicUpdate) {
-    const started = moment().format('DD HH:mm');
+    const started = moment().format('DD HH:mm:ss');
     try {
         let notams = await getNOTAMs();
         await EnterMongo();
@@ -125,7 +125,7 @@ async function updateNOTAMs(skipTopicUpdate) {
     }
 }
 async function updateClosures(skipTopicUpdate) {
-    const started = moment().format('DD HH:mm');
+    const started = moment().format('DD HH:mm:ss');
     try {
         let closures = await getClosures();
         await EnterMongo();
@@ -163,7 +163,7 @@ async function updateClosures(skipTopicUpdate) {
 
 }
 async function updateLaunches(skipTopicUpdate) {
-    const started = moment().format('DD HH:mm');
+    const started = moment().format('DD HH:mm:ss');
     try {
         let launches = await getLaunches();
         await EnterMongo();
@@ -193,7 +193,7 @@ async function updateLaunches(skipTopicUpdate) {
     }
 }
 async function fetchImminentLaunches() {
-    const started = moment().format('DD HH:mm');
+    const started = moment().format('DD HH:mm:ss');
     try {
         await EnterMongo();
         let collection = Mongo.db("launches").collection("launches");
