@@ -33,6 +33,9 @@ var UPDATE_CHANNELS = {
     ],
     'launch-reminder': [
         '910711567950172220',
+    ],
+    error: [
+        '914676717510090752',
     ]
 }
 var CHANNEL_TOPICS = {
@@ -41,6 +44,7 @@ var CHANNEL_TOPICS = {
     launch: '__**Space Launch into auto-posted by SpaceBot.**__',
 }
 var ROLES = {
+    Developer: '801662139546075138',
     Launch: '801994532970561576',
     Closure: '801994581423554561',
     TFR: '801994587790639174',
@@ -98,6 +102,23 @@ SpaceBot.on("error", err => {
 SpaceBot.sendMessage = async (channel, content) => (await SpaceBot.channels.fetch(channel)) ? (await SpaceBot.channels.fetch(channel)).send(content) : null;
 SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
     var chans = UPDATE_CHANNELS[type];
+
+    function getDisplayTime(time) {
+        try {
+            if(time.type === 'undecided') return [time.start || 'TBD', 'TBD'];
+            start_adj = moment(time.start).local();
+            if(time.type === 'exact') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern)'];
+            if(time.type === 'exact-second') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm:ss') + ' (eastern)'];
+            if(time.type === 'approximate') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
+            if(time.type === 'window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Do)')} (eastern)`];
+            if(time.type === 'exact-second-window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm:ss')}-${moment(time.stop).local().format('HH:mm:ss (MMM Do)')} (eastern)`];
+        } catch(err) {
+            console.log(`Caught error in getDisplayTime() (bot.js line 232)\n${err}`);
+            return ['Error', 'Error']
+        }
+        return [time.start || 'TBD', 'TBD'];
+    }
+
     if(type === 'notam') {
         if(old_data === 'repost') {
             format_day = `${moment(new_data.start).format('dddd')} the ${moment(new_data.start).format('Do')}`;
@@ -231,23 +252,6 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             await new Promise((resolve, _) => setTimeout(resolve, 1000));
         }
     } else if(type === 'launch') {
-
-        function getDisplayTime(time) {
-            try {
-                if(time.type === 'undecided') return [time.start || 'TBD', 'TBD'];
-                start_adj = moment(time.start).local();
-                if(time.type === 'exact') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern)'];
-                if(time.type === 'exact-second') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm:ss') + ' (eastern)'];
-                if(time.type === 'approximate') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
-                if(time.type === 'window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Do)')} (eastern)`];
-                if(time.type === 'exact-second-window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm:ss')}-${moment(time.stop).local().format('HH:mm:ss (MMM Do)')} (eastern)`];
-            } catch(err) {
-                console.log(`Caught error in getDisplayTime() (bot.js line 232)\n${err}`);
-                return ['Error', 'Error']
-            }
-            return [time.start || 'TBD', 'TBD'];
-        }
-
         var affils = `${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`;
         if(JSON.stringify(old_data) === '{}') {
             [new_disp_date, new_disp_time] = getDisplayTime(new_data.time);
@@ -286,7 +290,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         }
     } else if(type === 'launch-reminder') {
         const imminent = old_data === true;
-        var affils = `${imminent ? '**Imminent Launch Reminder**' : 'Upcoming Launch Reminder'}\n${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`;
+        var affils = `${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`;
         const [lDate, lTime] = getDisplayTime(new_data.time);
         var msg = new Discord.MessageEmbed()
             .setColor('#f70062')
@@ -301,7 +305,20 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             )
             .setTimestamp()
         for(let i = 0; i < chans.length; i++) {
-            await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['Launch']}>\n${affils}`, embed: msg});
+            await SpaceBot.sendMessage(chans[i], {content: `${imminent ? '**Imminent Launch Reminder**' : 'Upcoming Launch Reminder'}\n<@&${ROLES['Launch']}>\n${affils}`, embed: msg});
+            await new Promise((resolve, _) => setTimeout(resolve, 2000));
+        }
+    } else if(type === 'error') {
+        var msg = new Discord.MessageEmbed()
+            .setColor('#ff0000')
+            .setTitle(`Error Report`)
+            .setDescription(new_data.substring(0, 1800))
+            .addFields(
+                { name: 'Report Time', value: moment().format('HH:mm:ss'), inline: true},
+            )
+            .setTimestamp()
+        for(let i = 0; i < chans.length; i++) {
+            await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['Developer']}>`, embed: msg});
             await new Promise((resolve, _) => setTimeout(resolve, 2000));
         }
     }
