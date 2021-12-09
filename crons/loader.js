@@ -44,7 +44,7 @@ async function getNOTAMs() {
             // the string conversion two lines below to fail otherwise.
             let [posted, notam_id, facility, state, type, description] = tr.findAll('td')
                 .map(cell => cell.find('a') ? cell.find('a').contents.toString() : '');
-            if(type !== "SPACE OPERATIONS") return null;
+            if(type !== "SPACE OPERATIONS" || (description.indexOf('Brownsville') === -1 && description.indexOf('Boca Chica') === -1)) return null;
 
             notam_id = (new JSSoup(notam_id)).find('u').contents.toString()
             let link = getNOTAMURL(notam_id);
