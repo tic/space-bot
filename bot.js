@@ -112,8 +112,9 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             if(time.type === 'approximate') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
             if(time.type === 'window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Do)')} (eastern)`];
             if(time.type === 'exact-second-window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm:ss')}-${moment(time.stop).local().format('HH:mm:ss (MMM Do)')} (eastern)`];
+            if(time.type === 'flexible') return [start_adj.format('ddd MMM Do'), `Either ${start_adj.format('HH:mm:ss')} or ${moment(time.stop).local().format('HH:mm:ss')}`];
         } catch(err) {
-            console.log(`Caught error in getDisplayTime() (bot.js line 232)\n${err}`);
+            console.log(`Caught error in getDisplayTime() (bot.js line 106)\n${err}`);
             return ['Error', 'Error']
         }
         return [time.start || 'TBD', 'TBD'];
@@ -296,7 +297,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             .setColor('#f70062')
             .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
             .setURL('https://spaceflightnow.com/launch-schedule/')
-            .setAuthor((imminent ? 'Imminent' : 'Upcoming') + ' Launch! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
+            .setAuthor((imminent ? 'L-03h Reminder' : 'L-24h Reminder') + ' Launch! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
             .setDescription(new_data.description)
             .addFields(
                 { name: 'Launch Date', value: lDate, inline: true},
