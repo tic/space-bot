@@ -19,6 +19,8 @@ const AFFILIATIONS = [
     { tag: 'Japanese', group: 'Japan' },
     { tag: 'Japan', group: 'Japan' },
     { tag: 'International Space Station', group: 'ISS' },
+    { tag: 'Space Launch System', group: 'SLS' },
+    { tag: 'SLS', group: 'SLS' },
 ];
 
 async function getWeather() {
