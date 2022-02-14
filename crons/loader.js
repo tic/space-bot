@@ -183,6 +183,17 @@ async function getClosures() {
         }
     }
 
+    if(closures.length > 1) {
+        let last = closures[0].start.format('MM/DD/YYYY');
+        for(let i = 1; i < closures.length; i++) {
+            let temp = closures[i].start.format('MM/DD/YYYY');
+            if(last === temp) {
+                closures[i] = false;
+            }
+            last = temp;
+        }
+    }
+
     return closures.filter(_ => _);
 }
 
