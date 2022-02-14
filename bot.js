@@ -10,11 +10,14 @@ function time() {
 console.log(`[${time()}] [DISC] Logging in as ${process.env.DISCUSR}...`)
 SpaceBot.login(process.env.DISCSEC);
 
-var min = 0;
+var startupTime = (new Date()).getTime();
 function count() {
-    min += 3;
     function format(num) { return num < 10 ? `0${num}` : num; }
-    SpaceBot.user.setActivity(`stars for ${parseInt(min / 60)}h${format(min % 60)}m`, {type: 'WATCHING'});
+    const uptime_ms = (new Date()).getTime() - startupTime;
+    const days = parseInt(uptime_ms / 86400000);
+    const hours = parseInt((uptime_ms % 86400000) / 3600000);
+    const time_str = `${days > 0 ? `${days}d` : ''}${format(hours)}h`;
+    SpaceBot.user.setActivity(`stars for ${time_str}`, {type: 'WATCHING'});
 }
 
 var UPDATE_CHANNELS = {
@@ -93,7 +96,8 @@ SpaceBot.on("ready", () => {
         'launch': null,
     }
 
-    setInterval(count, 180000);
+    count();
+    setInterval(count, 3600000);
 });
 SpaceBot.on("error", err => {
     console.log(`[${time()}] [DISC] !! Error in discord bot:`);
