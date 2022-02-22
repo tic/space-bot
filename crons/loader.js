@@ -302,6 +302,7 @@ function cleanTime(date, time) {
         }
     }
 }
+
 async function getLaunches() {
     const content = await (await fetch(LAUNCHES).catch(err => {
         console.error(err);
@@ -356,9 +357,94 @@ async function getLaunches() {
     return launches;
 }
 
+async function getF9Boosters() {
+    const content = await (await fetch('https://en.wikipedia.org/wiki/List_of_Falcon_9_first-stage_boosters').catch(err => {
+        console.error(err);
+        return {text: () => null};
+    })).text();
+    if(content === null) {
+        return [];
+    }
+    const now = moment();
+
+    let boosters = [];
+    const soup = new JSSoup(content);
+    let boostersRaw = soup.find('table').findAll('tr').splice(1);
+    for(let i = 0; i < boostersRaw.length; i++) {
+        const boosterData = boostersRaw[i].findAll('td');
+
+        // Find the operative data row (with the latest landing information)
+        let j = i + 1;
+        for(; j < boostersRaw.length; j++) {
+            let data = boostersRaw[j].find('td');
+            if(data.text.match(/B\d{4}/)) {
+                i = j - 1;
+                break;
+            }
+        }
+
+        if(j === boostersRaw.length) {
+            i = boostersRaw.length - 1;
+        }
+
+        // Process/clean booster data
+        launchData = boostersRaw[i].findAll('td');
+
+        // Process launch date
+        let boosterLaunch = launchData[launchData.length === 10 ? 3 : launchData.length === 7 ? 1 : 0].text.replace(/[\n\t]/g, '');
+        if(boosterLaunch)
+        if(/not yet known/i.test(boosterLaunch)) {
+            // If the booster isn't scheduled to fly, there is no point in
+            //   recording it, since it can't be matched with a mission w/o an
+            //   assigned mission date.
+            continue;
+        } else if(boosterLaunch.indexOf('&') > -1) {
+            boosterLaunch = boosterLaunch.substring(0, boosterLaunch.indexOf('&'));
+        }
+
+        // If the most recent date data for a booster is in the past, skip it
+        if(/^.* \d{4}$/.test(boosterLaunch) && moment(boosterLaunch, 'D MMMM YYYY').diff(now) < 0) {
+            continue;
+        }
+
+        // Process landing location data
+        let landingData = launchData.length === 10 ? launchData[8].text : launchData[5].text;
+        let landingStr = landingData;
+        if(/no attempt/i.test(landingData)) {
+            landingStr = 'Expended - no landing';
+        } else if(/not yet known/i.test(landingData)) {
+            landingStr = 'Unassigned';
+        } else {
+            landingStr = landingData.match(/\((.*)\)/i)[1];
+            if(landingStr === 'ASDS') {
+                landingStr = 'Unspecified drone ship';
+            }
+        }
+
+        // Process booster class
+        let boosterType = boosterData[1].text.replace(/[\n\t]/g, '');
+        if(boosterType.indexOf('&') > -1) {
+            boosterType = boosterType.substring(0, boosterType.indexOf('&'));
+        }
+
+        // Record the cleaned booster data
+        let thisBooster = {
+            booster: boosterData[0].text.replace(/[\n\t]/g, ''),
+            type: boosterType,
+            previousFlightCount: parseInt(boosterData[2].text.replace(/[\n\t]/g, '')),
+            latestLaunch: boosterLaunch,
+            latestLandingSite: landingStr
+        };
+
+        boosters.push(thisBooster);
+    }
+    return boosters;
+}
+
 module.exports = {
     getWeather,
     getNOTAMs,
     getClosures,
     getLaunches,
+    getF9Boosters
 }

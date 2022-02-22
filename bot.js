@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const moment = require('moment');
 require('moment-timezone');
+const { getF9Boosters } = require('./crons/loader');
 var SpaceBot = new Discord.Client();
 
 function time() {
@@ -66,6 +67,19 @@ var ROLES = {
     SLS: '940418424503431258'
 }
 
+const F9BoosterController = {
+    boosterList: [],
+    updated: 0,
+    getBoosters: async function() {
+        // Limit refreshing the booster list to once per minute
+        if((new Date()).getTime() > this.updated + 60000) {
+            this.boosterList = await getF9Boosters();
+            this.updated = (new Date()).getTime();
+        }
+        return this.boosterList;
+    }
+}
+
 SpaceBot.on("ready", () => {
     console.log(`[${time()}] [DISC] ${process.env.DISCUSR} logged in.`);
 
@@ -125,6 +139,18 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         return [time.start || 'TBD', 'TBD'];
     }
 
+    async function addBoosterData(msg) {
+        if(new_data.vehicle === 'Falcon 9' || new_data.vehicle === 'Falcon Heavy') {
+            const boosterList = await F9BoosterController.getBoosters();
+            const booster = boosterList.find(booster => booster.latestLaunch === moment(new_data.time.start).format('D MMMM YYYY'));
+            if(booster) {
+                msg.addFields(
+                    { name: `Booster __${booster.booster}__ (${booster.type})`, value: `- Flight no. ${booster.previousFlightCount + 1}\n- Landing Site: ${booster.latestLandingSite}`, inline: false}
+                )
+            }
+        }
+    }
+
     if(type === 'notam') {
         if(old_data === 'repost') {
             format_day = `${moment(new_data.start).format('dddd')} the ${moment(new_data.start).format('Do')}`;
@@ -141,7 +167,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                     { name: 'Altitude', value: `${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
                 )
                 .setThumbnail(new_data.image)
-                .setTimestamp()
+                .setTimestamp();
         } else if(JSON.stringify(old_data) === '{}') {
             format_day = `${moment(new_data.start).format('dddd')} the ${moment(new_data.start).format('Do')}`;
             var msg = new Discord.MessageEmbed()
@@ -157,7 +183,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                     { name: 'Altitude', value: `${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
                 )
                 .setThumbnail(new_data.image)
-                .setTimestamp()
+                .setTimestamp();
         } else if(JSON.stringify(new_data) === '{}') {
             format_day = `${moment(old_data.start).format('dddd')} the ${moment(old_data.start).format('Do')}`;
             var msg = new Discord.MessageEmbed()
@@ -173,7 +199,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                     { name: 'Altitude', value: `${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
                 )
                 .setThumbnail(new_data.image)
-                .setTimestamp()
+                .setTimestamp();
         } else {
             format_day = `${moment(new_data.start).format('dddd')} the ${moment(new_data.start).format('Do')}`;
             var msg = new Discord.MessageEmbed()
@@ -189,7 +215,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                     { name: 'Altitude', value: old_data.altitude === new_data.altitude ? new_data.altitude : `~~${old_data.altitude}~~\n${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
                 )
                 .setThumbnail(new_data.image)
-                .setTimestamp()
+                .setTimestamp();
         }
         for(let i = 0; i < chans.length; i++) {
             await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['TFR']}>`, embed: msg});
@@ -210,7 +236,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                     { name: 'Closure Ends', value: `${moment(new_data.stop).format('HH:mm')} Eastern`, inline: true},
                     { name: 'Status', value: new_data.status, inline: true}
                 )
-                .setTimestamp()
+                .setTimestamp();
         } else {
             var msg = new Discord.MessageEmbed()
                 .setColor('#ffff00')
@@ -225,7 +251,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                     { name: 'Closure Ends', value: old_data.stop === new_data.stop ? `${moment(new_data.stop).format('HH:mm')} Eastern` : `~~${moment(old_data.stop).format('HH:mm')}~~\n${moment(new_data.stop).format('HH:mm')} Eastern`, inline: true},
                     { name: 'Status', value: old_data.status === new_data.status ? new_data.status : `~~${old_data.status}~~\n${new_data.status}`, inline: true}
                 )
-                .setTimestamp()
+                .setTimestamp();
         }
         for(let i = 0; i < chans.length; i++) {
             await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['Closure']}>`, embed: msg});
@@ -251,7 +277,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 { name: 'Rain to date', value: `${new_data.seasonalRain} ${new_data.rainUnits}`, inline: true}
             )
             .setTimestamp()
-            .setFooter(`Data last received ${moment(new_data.lastReceived, 'x').format('MM-DD-YY - HH:mm')} Eastern`)
+            .setFooter(`Data last received ${moment(new_data.lastReceived, 'x').format('MM-DD-YY - HH:mm')} Eastern`);
         for(let i = 0; i < chans.length; i++) {
             if(chans[i].edit) (await SpaceBot.channels.cache.get(chans[i].channel).messages.fetch(chans[i].id)).edit(msg);
             else await SpaceBot.sendMessage(chans[i].channel, msg);
@@ -259,6 +285,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         }
     } else if(type === 'launch') {
         var affils = `${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`;
+
         if(JSON.stringify(old_data) === '{}') {
             [new_disp_date, new_disp_time] = getDisplayTime(new_data.time);
             var msg = new Discord.MessageEmbed()
@@ -272,7 +299,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                     { name: 'Launch Time', value: new_disp_time, inline: true},
                     { name: 'Launch Site', value: new_data.launch_site, inline: false}
                 )
-                .setTimestamp()
+                .setTimestamp();
         } else {
             [old_disp_date, old_disp_time] = old_data.time ? getDisplayTime(old_data.time) : [old_data.date, old_data.window];
             [new_disp_date, new_disp_time] = getDisplayTime(new_data.time);
@@ -288,8 +315,11 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                     { name: 'Launch Time', value: old_disp_time === new_disp_time ? new_disp_time : `~~${old_disp_time}~~\n${new_disp_time}`, inline: true},
                     { name: 'Launch Site', value: old_data.site === new_data.site ? new_data.launch_site : `~~${old_data.launch_site}~~\n${new_data.launch_site}`, inline: false}
                 )
-                .setTimestamp()
+                .setTimestamp();
         }
+
+        await addBoosterData(msg);
+
         for(let i = 0; i < chans.length; i++) {
             await SpaceBot.sendMessage(chans[i], {content: `<@&${ROLES['Launch']}>\n${affils}`, embed: msg});
             await new Promise((resolve, _) => setTimeout(resolve, 2000));
@@ -302,16 +332,19 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             .setColor('#f70062')
             .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
             .setURL('https://spaceflightnow.com/launch-schedule/')
-            .setAuthor((imminent ? 'L-03h Reminder' : 'L-24h Reminder') + ' Launch! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
+            .setAuthor((imminent ? 'L-03' : 'L-24') + 'h Reminder! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
             .setDescription(new_data.description)
             .addFields(
                 { name: 'Launch Date', value: lDate, inline: true},
                 { name: 'Launch Time', value: lTime, inline: true},
                 { name: 'Launch Site', value: new_data.launch_site, inline: false}
             )
-            .setTimestamp()
+            .setTimestamp();
+
+        await addBoosterData(msg);
+
         for(let i = 0; i < chans.length; i++) {
-            await SpaceBot.sendMessage(chans[i], {content: `${imminent ? '**Imminent Launch Reminder**' : 'Upcoming Launch Reminder'}\n<@&${ROLES['Launch']}>\n${affils}`, embed: msg});
+            await SpaceBot.sendMessage(chans[i], {content: `${imminent ? '**Launch Alert**' : 'Launch Notice'}\n<@&${ROLES['Launch']}>\n${affils}`, embed: msg});
             await new Promise((resolve, _) => setTimeout(resolve, 2000));
         }
     } else if(type === 'error') {
