@@ -9,10 +9,10 @@ const moment = require('moment');
 // launch update will happen at 11:00, then just before 11:59,
 // then just before 12:58, and so on. Over the course of several
 // update periods, the trigger time rotates around the clock.
-const WEATHER_DELAY = 3 * 60 * 1000 - 1000;  // Every 2 minutes, 59 seconds
-const NOTAM_DELAY = 3 * 60 * 1000 - 1000;    // Every 2 minutes, 59 seconds
-const CLOSURE_DELAY = 3 * 60 * 1000 - 1000;  // Every 2 minutes, 59 seconds
-const LAUNCH_DELAY = 7 * 60 * 1000 - 1000;   // Every 6 minutes, 59 seconds
+const WEATHER_DELAY = 10 * 60 * 1000 - 1000;  // Every 9 minutes, 59 seconds
+const NOTAM_DELAY = 10 * 60 * 1000 - 1000;    // Every 9 minutes, 59 seconds
+const CLOSURE_DELAY = 15 * 60 * 1000 - 1000;  // Every 14 minutes, 59 seconds
+const LAUNCH_DELAY = 15 * 60 * 1000 - 1000;   // Every 14 minutes, 59 seconds
 const IMMINENT_LAUNCH_DELAY = 20 * 60 * 1000 - 1000 // Every 19 minutes, 59 seconds
 
 // Calibration parameters
@@ -263,9 +263,9 @@ SpaceBot.on("ready", () => {
     // amount of message spam in Discord. :(
     // updateWeather();
     setTimeout(() => updateNOTAMs(true), 1000);
-    setTimeout(() => updateClosures(true), 6000);
-    setTimeout(() => updateLaunches(true), 11000);
-    setTimeout(() => fetchImminentLaunches(true), 2500);
+    setTimeout(() => updateClosures(true), 30000);
+    setTimeout(() => updateLaunches(true), 2000);
+    setTimeout(() => fetchImminentLaunches(true), 12000);
     // Channel topics won't change the "updated at __:__" on the first run
 });
 
