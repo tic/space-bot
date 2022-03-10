@@ -326,7 +326,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         } else {
             oldDisplayTimestamp = old_data.time ? getDisplayTime(old_data.time) : [old_data.date, old_data.window];
             newDisplayTimestamp = getDisplayTime(new_data.time);
-            if(old_disp_date === new_disp_date && old_disp_time === new_disp_time) return;
+            if(oldDisplayTimestamp === newDisplayTimestamp && oldDisplayTimestamp === newDisplayTimestamp) return;
             var msg = new Discord.MessageEmbed()
                 .setColor('#ffff00')
                 .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
