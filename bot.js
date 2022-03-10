@@ -124,19 +124,43 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
 
     function getDisplayTime(time) {
         try {
-            if(time.type === 'undecided') return [time.start || 'TBD', 'TBD'];
-            start_adj = moment(time.start).local();
-            if(time.type === 'exact') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern)'];
-            if(time.type === 'exact-second') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm:ss') + ' (eastern)'];
-            if(time.type === 'approximate') return [start_adj.format('ddd MMM Do'), start_adj.format('HH:mm') + ' (eastern, estimated)'];
-            if(time.type === 'window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm')}-${moment(time.stop).local().format('HH:mm (MMM Do)')} (eastern)`];
-            if(time.type === 'exact-second-window') return [start_adj.format('ddd MMM Do'), `Launch window ${start_adj.format('HH:mm:ss')}-${moment(time.stop).local().format('HH:mm:ss (MMM Do)')} (eastern)`];
-            if(time.type === 'flexible') return [start_adj.format('ddd MMM Do'), `Either ${start_adj.format('HH:mm:ss')} or ${moment(time.stop).local().format('HH:mm:ss')}`];
+            if(time.type === 'undecided') {
+                return time.start || 'TBD';
+            }
+
+            startUT = moment(time.start).local().unix();
+            
+            if(time.type === 'exact') {
+                return `<t:${startUT}:F>`;
+            }
+
+            if(time.type === 'exact-second') {
+                return `<t:${startUT}:F>`;
+            }
+            
+            if(time.type === 'approximate') {
+                return `Approximately <t:${startUT}:F>`;
+            }
+            
+            stopUT = moment(time.stop).local().unix();
+
+            if(time.type === 'window') {
+                return `Launch window opens: <t:${startUT}:F>\nWindow closes: <t:${stopUT}:F>`;
+            }
+            
+            if(time.type === 'exact-second-window') {
+                return `Launch window opens: <t:${startUT}:F>\nWindow closes: <t:${stopUT}:F>`;
+            }
+
+            if(time.type === 'flexible') {
+                return `Opportunity A: <t:${startUT}:F>\nOpportunity B: <t:${stopUT}:F>`;
+            }
         } catch(err) {
             console.log(`Caught error in getDisplayTime() (bot.js line 106)\n${err}`);
-            return ['Error', 'Error']
+            return 'Error';
         }
-        return [time.start || 'TBD', 'TBD'];
+
+        return time.start || 'TBD';
     }
 
     async function addBoosterData(msg) {
@@ -287,7 +311,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         var affils = `${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`;
 
         if(JSON.stringify(old_data) === '{}') {
-            [new_disp_date, new_disp_time] = getDisplayTime(new_data.time);
+            displayTimestamp = getDisplayTime(new_data.time);
             var msg = new Discord.MessageEmbed()
                 .setColor('#ff0000')
                 .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
@@ -295,14 +319,13 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setAuthor('New Launch Posted! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
                 .setDescription(new_data.description)
                 .addFields(
-                    { name: 'Launch Date', value: new_disp_date, inline: true},
-                    { name: 'Launch Time', value: new_disp_time, inline: true},
+                    { name: 'Launch Time', value: displayTimestamp, inline: true},
                     { name: 'Launch Site', value: new_data.launch_site, inline: false}
                 )
                 .setTimestamp();
         } else {
-            [old_disp_date, old_disp_time] = old_data.time ? getDisplayTime(old_data.time) : [old_data.date, old_data.window];
-            [new_disp_date, new_disp_time] = getDisplayTime(new_data.time);
+            oldDisplayTimestamp = old_data.time ? getDisplayTime(old_data.time) : [old_data.date, old_data.window];
+            newDisplayTimestamp = getDisplayTime(new_data.time);
             if(old_disp_date === new_disp_date && old_disp_time === new_disp_time) return;
             var msg = new Discord.MessageEmbed()
                 .setColor('#ffff00')
@@ -311,8 +334,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setAuthor('Launch Update! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
                 .setDescription(new_data.description)
                 .addFields(
-                    { name: 'Launch Date', value: old_disp_date === new_disp_date ? new_disp_date : `~~${old_disp_date}~~\n${new_disp_date}`, inline: true},
-                    { name: 'Launch Time', value: old_disp_time === new_disp_time ? new_disp_time : `~~${old_disp_time}~~\n${new_disp_time}`, inline: true},
+                    { name: 'Launch Time', value: oldDisplayTimestamp === newDisplayTimestamp ? newDisplayTimestamp : `~~${oldDisplayTimestamp}~~\n${newDisplayTimestamp}`, inline: true},
                     { name: 'Launch Site', value: old_data.site === new_data.site ? new_data.launch_site : `~~${old_data.launch_site}~~\n${new_data.launch_site}`, inline: false}
                 )
                 .setTimestamp();
@@ -327,7 +349,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
     } else if(type === 'launch-reminder') {
         const imminent = old_data === true;
         var affils = `${new_data.affiliations.map(a => `<@&${ROLES[a]}>`).join(' ')}`;
-        const [lDate, lTime] = getDisplayTime(new_data.time);
+        const displayTimestamp = getDisplayTime(new_data.time);
         var msg = new Discord.MessageEmbed()
             .setColor('#f70062')
             .setTitle(`${new_data.vehicle} ● ${new_data.mission}`)
@@ -335,8 +357,7 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
             .setAuthor((imminent ? 'L-03' : 'L-24') + 'h Reminder! | SpaceflightNow', 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg', 'https://spaceflightnow.com/')
             .setDescription(new_data.description)
             .addFields(
-                { name: 'Launch Date', value: lDate, inline: true},
-                { name: 'Launch Time', value: lTime, inline: true},
+                { name: 'Launch Time', value: displayTimestamp, inline: true},
                 { name: 'Launch Site', value: new_data.launch_site, inline: false}
             )
             .setTimestamp();
