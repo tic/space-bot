@@ -94,11 +94,11 @@ SpaceBot.on("ready", () => {
         }
     }
 
-    SpaceBot.__intervals = {
-        'notam': setInterval(updater(UPDATE_CHANNELS.notam, 'notam'), 590000),
-        'closure': setInterval(updater(UPDATE_CHANNELS.notam, 'closure'), 600000),
-        'launch': setInterval(updater(UPDATE_CHANNELS.notam, 'launch'), 610000),
-    }
+    // SpaceBot.__intervals = {
+    //     'notam': setInterval(updater(UPDATE_CHANNELS.notam, 'notam'), 590000),
+    //     'closure': setInterval(updater(UPDATE_CHANNELS.notam, 'closure'), 600000),
+    //     'launch': setInterval(updater(UPDATE_CHANNELS.notam, 'launch'), 610000),
+    // }
     SpaceBot.__last_updates = {
         'notam': null,
         'closure': null,
@@ -186,9 +186,9 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setDescription(`A previous Temporary Flight Restriction (TFR) was reposted.`)
                 .addFields(
                     { name: 'NOTAM ID', value: new_data.id, inline: true},
-                    { name: 'Restriction Begins', value: `${moment(new_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
-                    { name: 'Restriction Ends', value: `${moment(new_data.stop).format('M-DD, HH:mm')} Eastern`, inline: true},
-                    { name: 'Altitude', value: `${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
+                    { name: 'Altitude', value: `${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true},
+                    { name: 'Restriction Begins', value: `<t:${moment(new_data.start).local().unix()}:F>`},
+                    { name: 'Restriction Ends', value: `<t:${moment(new_data.stop).local().unix()}:F>`}
                 )
                 .setThumbnail(new_data.image)
                 .setTimestamp();
@@ -202,9 +202,9 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setDescription(`A new Temporary Flight Restriction (TFR) has been posted. Details of the TFR are shown below.`)
                 .addFields(
                     { name: 'NOTAM ID', value: new_data.id, inline: true},
-                    { name: 'Restriction Begins', value: `${moment(new_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
-                    { name: 'Restriction Ends', value: `${moment(new_data.stop).format('M-DD, HH:mm')} Eastern`, inline: true},
-                    { name: 'Altitude', value: `${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
+                    { name: 'Altitude', value: `${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true},
+                    { name: 'Restriction Begins', value: `<t:${moment(new_data.start).local().unix()}:F>`},
+                    { name: 'Restriction Ends', value: `<t:${moment(new_data.stop).local().unix()}:F>`}
                 )
                 .setThumbnail(new_data.image)
                 .setTimestamp();
@@ -218,9 +218,9 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setDescription(`An existing Temporary Flight Restriction (TFR) was removed. The previous details for the TFR are shown below.`)
                 .addFields(
                     { name: 'NOTAM ID', value: `${old_data.id}`, inline: true},
-                    { name: 'Restriction Begins', value: `${moment(old_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
-                    { name: 'Restriction Ends', value: `${moment(old_data.stop).format('M-DD, HH:mm')} Eastern`, inline: true},
-                    { name: 'Altitude', value: `${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
+                    { name: 'Altitude', value: `${old_data.altitude}${old_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true},
+                    { name: 'Restriction Begins', value: `<t:${moment(old_data.start).local().unix()}:F>`},
+                    { name: 'Restriction Ends', value: `<t:${moment(old_data.stop).local().unix()}:F>`}
                 )
                 .setThumbnail(new_data.image)
                 .setTimestamp();
@@ -234,9 +234,9 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
                 .setDescription(`An existing Temporary Flight Restriction (TFR) has been modified.`)
                 .addFields(
                     { name: 'NOTAM ID', value: new_data.id, inline: true},
-                    { name: 'Restriction Begins', value: old_data.start === new_data.start ? `${moment(new_data.start).format('M-DD, HH:mm')} Eastern` : `~~${moment(old_data.start).format('M-DD, HH:mm')}~~\n${moment(new_data.start).format('M-DD, HH:mm')} Eastern`, inline: true},
-                    { name: 'Restriction Ends', value: old_data.stop === new_data.stop ? `${moment(new_data.stop).format('M-DD, HH:mm')} Eastern` : `~~${moment(old_data.stop).format('M-DD, HH:mm')}~~ \`${moment(new_data.stop).format('M-DD, HH:mm')} Eastern`, inline: true},
-                    { name: 'Altitude', value: old_data.altitude === new_data.altitude ? new_data.altitude : `~~${old_data.altitude}~~\n${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true}
+                    { name: 'Altitude', value: old_data.altitude === new_data.altitude ? new_data.altitude : `~~${old_data.altitude}~~\n${new_data.altitude}${new_data.altitude === 'Unlimited' ? '' : ' feet MSL'}`, inline: true},
+                    { name: 'Restriction Begins', value: old_data.start === new_data.start ? `<t:${moment(new_data.start).local().unix()}:F>` : `~~<t:${moment(old_data.start).local().unix()}:F>~~\n<t:${moment(new_data.start).local().unix()}:F>`},
+                    { name: 'Restriction Ends', value: old_data.stop === new_data.stop ? `<t:${moment(new_data.stop).local().unix()}:F>` : `~~<t:${moment(old_data.stop).local().unix()}:F>~~\n<t:${moment(new_data.stop).local().unix()}:F>`}
                 )
                 .setThumbnail(new_data.image)
                 .setTimestamp();
@@ -247,33 +247,32 @@ SpaceBot.receiveUpdate = async ({type, old: old_data, new: new_data}) => {
         }
     } else if(type === 'closure') {
         if(JSON.stringify(old_data) === '{}') {
+
             var msg = new Discord.MessageEmbed()
                 .setColor('#00ff00')
                 .setTitle(`Road Closure Posted`)
-                .setURL('https://cameroncounty.us/spacex/')
-                .setAuthor('Highway 4 - Cameron County', 'https://www.cameroncounty.us/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png', 'https://cameroncounty.us/spacex/')
+                .setURL('https://cameroncountytx.gov/spacex/')
+                .setAuthor('Highway 4 - Cameron County', 'https://cameroncountytx.gov/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png', 'https://cameroncountytx.gov/spacex/')
                 .setDescription(`A new closure of Highway 4 in Boca Chica has been posted.`)
                 .addFields(
-                    { name: 'Day', value: moment(new_data.day, 'YYYY-MM-DD').format('dddd, M-DD'), inline: true},
                     { name: 'Type', value: new_data.type, inline: true},
-                    { name: 'Closure Begins', value: `${moment(new_data.start).format('HH:mm')} Eastern`, inline: true},
-                    { name: 'Closure Ends', value: `${moment(new_data.stop).format('HH:mm')} Eastern`, inline: true},
-                    { name: 'Status', value: new_data.status, inline: true}
+                    { name: 'Status', value: new_data.status, inline: true},
+                    { name: 'Closure Begins', value: `<t:${moment(new_data.start).local().unix()}:F>`},
+                    { name: 'Closure Ends', value: `<t:${moment(new_data.stop).local().unix()}:F>`}
                 )
                 .setTimestamp();
         } else {
             var msg = new Discord.MessageEmbed()
                 .setColor('#ffff00')
                 .setTitle(`Road Closure Modification`)
-                .setURL('https://cameroncounty.us/spacex/')
-                .setAuthor('Highway 4 - Cameron County', 'https://www.cameroncounty.us/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png', 'https://cameroncounty.us/spacex/')
+                .setURL('https://cameroncountytx.gov/spacex/')
+                .setAuthor('Highway 4 - Cameron County', 'https://cameroncountytx.gov/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png', 'https://cameroncountytx.gov/spacex/')
                 .setDescription(`Details surrounding a closure of Highway 4 in Boca Chica have changed.`)
                 .addFields(
-                    { name: 'Day', value: moment(new_data.day, 'YYYY-MM-DD').format('dddd, M-DD'), inline: true},
                     { name: 'Type', value: old_data.type === new_data.type ? new_data.type : `~~${old_data.type}~~\n${new_data.type}`, inline: true},
-                    { name: 'Closure Begins', value: old_data.start === new_data.start ? `${moment(new_data.start).format('HH:mm')} Eastern` : `~~${moment(old_data.start).format('HH:mm')}~~\n${moment(new_data.start).format('HH:mm')} Eastern`, inline: true},
-                    { name: 'Closure Ends', value: old_data.stop === new_data.stop ? `${moment(new_data.stop).format('HH:mm')} Eastern` : `~~${moment(old_data.stop).format('HH:mm')}~~\n${moment(new_data.stop).format('HH:mm')} Eastern`, inline: true},
-                    { name: 'Status', value: old_data.status === new_data.status ? new_data.status : `~~${old_data.status}~~\n${new_data.status}`, inline: true}
+                    { name: 'Status', value: old_data.status === new_data.status ? new_data.status : `~~${old_data.status}~~\n${new_data.status}`, inline: true},
+                    { name: 'Closure Begins', value: old_data.start === new_data.start ? `<t:${moment(new_data.start).local().unix()}:F>` : `~~<t:${moment(old_data.start).local().unix()}:F>~~\n<t:${moment(new_data.start).local().unix()}:F>`},
+                    { name: 'Closure Ends', value: old_data.stop === new_data.stop ? `<t:${moment(new_data.stop).local().unix()}:F>` : `~~<t:${moment(old_data.stop).local().unix()}:F>~~\n<t:${moment(new_data.stop).local().unix()}:F>`}
                 )
                 .setTimestamp();
         }
