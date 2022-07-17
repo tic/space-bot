@@ -30,9 +30,13 @@ if (!folderEntries.includes(scraperFile)) {
 
 // eslint-disable-next-line import/no-dynamic-require
 const scraperController = require(`./${argv[2]}`).default;
+console.log('==========  EXECUTING  SCRAPER  ==========');
 scraperController.collect()
   .then((collectionResult: ScrapedDataReportType) => {
-    console.log(collectionResult);
+    console.log(
+      '========== SCRAPER RETURN VALUE ==========\n',
+      collectionResult,
+    );
   })
   .catch((error: Error) => {
     console.error(error);

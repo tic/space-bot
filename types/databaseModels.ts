@@ -151,7 +151,7 @@ export const f9LandingLocationInfoMap: Record<string, string> = {
 
 export type Falcon9Assignment = {
   boosterFlightNumber: number,
-  date: number,
+  date: string,
   flightDesignation: string,
   turnaroundTime: string,
   recoveryDetails: {
@@ -166,10 +166,10 @@ export type Falcon9Assignment = {
 };
 
 export type Falcon9BoosterType = {
-  _id: ObjectId,
-  boosterId: string,
+  _id?: ObjectId,
+  boosterSN: string,
   currentClassification: F9BoosterClassificationType,
   assignments: Falcon9Assignment[],
-  notes: string[],
+  notes?: string[],
   status: string,
 };

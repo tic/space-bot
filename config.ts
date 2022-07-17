@@ -5,9 +5,8 @@ import {
 import { GlobalConfigType } from './types/globalTypes';
 
 export const getConfig = () : GlobalConfigType => {
-  console.log('[CNFIG] Loading project configuration');
+  console.log('[CNFIG] Loading project configuration...');
   const { parsed: parsedEnv }: DotenvConfigOutput = dotenvConfig();
-  console.log(parsedEnv);
   if (parsedEnv === undefined) {
     throw new Error();
   }
@@ -63,6 +62,7 @@ export const getConfig = () : GlobalConfigType => {
     process.exit(1);
   }
 
+  console.log('[CNFIG] Configuration loaded.');
   return createdConfig;
 };
 
