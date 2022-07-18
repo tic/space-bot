@@ -41,6 +41,7 @@
     "no-console": "off",
     "no-implied-eval": "off",
     "require-await": "off",
-    "arrow-parens": ["error", "always"]
+    "arrow-parens": ["error", "always"],
+    "no-plusplus": "off"
   }
 }

@@ -66,11 +66,12 @@ export enum RocketLaunchTimeType {
   UNDECIDED = 'UNDECIDED',
   UNKNOWN = 'UNKNOWN',
   EXACT = 'EXACT',
-  EXACT_SECOND = 'EXACT-SECOND',
+  EXACT_SECOND = 'EXACT_SECOND',
   WINDOW = 'WINDOW',
-  EXACT_SECOND_WINDOW = 'EXACT-SECOND-WINDOW',
+  EXACT_SECOND_WINDOW = 'EXACT_SECOND_WINDOW',
   APPROXIMATE = 'APPROXIMATE',
   FLEXIBLE = 'FLEXIBLE',
+  ESTIMATED = 'ESTIMATED',
 };
 
 export const rocketLaunchTimeTypeDescriptions: Record<RocketLaunchTimeType, string> = {
@@ -82,17 +83,36 @@ export const rocketLaunchTimeTypeDescriptions: Record<RocketLaunchTimeType, stri
   [RocketLaunchTimeType.EXACT_SECOND_WINDOW]: 'This launch may occur at any point within the provided launch window.',
   [RocketLaunchTimeType.APPROXIMATE]: 'This launch will occur at approximately the provided time.',
   [RocketLaunchTimeType.FLEXIBLE]: 'This launch may proceed at either of two instantaneous launch windows.',
+  [RocketLaunchTimeType.ESTIMATED]: 'There is only a general timeframe associated with this launch.',
+};
+
+export enum LaunchAffiliationType {
+  ROCKET_LAB = 'ROCKET_LAB',
+  SPACEX = 'SPACEX',
+  ROSCOSMOS = 'ROSCOSMOS',
+  NORTHROP_GRUMMAN = 'NORTHROP_GRUMMAN',
+  UNITED_LAUNCH_ALLIANCE = 'UNITED_LAUNCH_ALLIANCE',
+  INDIA = 'INDIA',
+  ARIANESPACE = 'ARIANESPACE',
+  US_AIR_FORCE = 'USAF',
+  US_SPACE_FORCE = 'USSF',
+  ASTRA = 'ASTRA',
+  JAPAN = 'JAXA',
+  NASA = 'NASA',
+  INTERNATIONAL_SPACE_STATION = 'ISS',
+  SPACE_LAUNCH_SYSTEM = 'SLS'
 };
 
 export type RocketLaunchType = {
-  _id: ObjectId,
-  affiliations: string[],
+  _id?: ObjectId,
+  affiliations: LaunchAffiliationType[],
   date: string,
   description: string,
   launchSite: string,
   mission: string,
   time: {
     type: RocketLaunchTimeType,
+    isNET: boolean,
     startDate: number,
     stopDate: number | null,
   },
