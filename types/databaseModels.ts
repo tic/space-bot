@@ -120,9 +120,9 @@ export type RocketLaunchType = {
 };
 
 export type NotamType = {
-  _id: ObjectId,
   altitude: number,
   imageUrl: string,
+  issuedDate: number,
   notamId: string,
   notamUrl: string,
   startDate: number,

@@ -36,6 +36,7 @@ export const getConfig = () : GlobalConfigType => {
       },
       notams: {
         url: env('SCRAPER_URL_NOTAMS'),
+        base: env('SCRAPER_URL_NOTAMS_BASE'),
       },
       weather: {
         url: env('SCRAPER_URL_WEATHER'),

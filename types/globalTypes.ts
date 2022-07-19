@@ -22,6 +22,7 @@ export type GlobalConfigType = {
     },
     notams: {
       url: string,
+      base: string,
     },
     weather: {
       url: string,

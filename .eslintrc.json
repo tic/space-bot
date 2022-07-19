@@ -42,6 +42,7 @@
     "no-implied-eval": "off",
     "require-await": "off",
     "arrow-parens": ["error", "always"],
-    "no-plusplus": "off"
+    "no-plusplus": "off",
+    "no-continue": "off"
   }
 }
