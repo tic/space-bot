@@ -34,7 +34,7 @@ export type GlobalConfigType = {
   },
   mongo: {
     url: string,
-    port: number,
+    primaryDatabase: string,
     username: string,
     password: string,
   },

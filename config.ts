@@ -48,7 +48,7 @@ export const getConfig = () : GlobalConfigType => {
     },
     mongo: {
       url: env('MONGO_URL'),
-      port: parseInt(env('MONGO_PORT'), 10) || 0,
+      primaryDatabase: env('MONGO_PORT'),
       username: env('MONGO_USERNAME'),
       password: env('MONGO_PASSWORD'),
     },
