@@ -34,13 +34,13 @@ const collect = async () : Promise<ClosureDataReportType> => {
       const [rawClosureType, rawDate, rawTime, rawBeachStatus] = [0, 0, 0, 0].map(
         (_, index) => dataColumns[index].textContent?.trim() || '',
       );
-      if (!closureDateRegexp.test(rawDate)) {
+      if (!rawDate.match(closureDateRegexp)) {
         continue;
       }
       const parsedClosureType = rawClosureType.match(primaryDateRegexp)
         ? RoadClosureTypeEnum.PRIMARY
         : RoadClosureTypeEnum.ALTERNATIVE;
-      const datePieces = closureDateRegexp.exec(rawDate) || [];
+      const datePieces = rawDate.match(closureDateRegexp) || [];
       if (datePieces.length !== 5) {
         throw ImpossibleRegexError;
       }

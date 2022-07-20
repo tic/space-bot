@@ -73,24 +73,24 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
     let year = currentYear;
     let day = -1;
     let month = -1;
-    if (regexps.date.abbreviatedMonthAndDay.test(rawDate)) {
-      const result = regexps.date.abbreviatedMonthAndDay.exec(rawDate);
+    if (rawDate.match(regexps.date.abbreviatedMonthAndDay)) {
+      const result = rawDate.match(regexps.date.abbreviatedMonthAndDay);
       if (!result || result.length < 3) {
         throw ImpossibleRegexError;
       }
       month = abbreviatedMonths.indexOf(result[1].toUpperCase());
       day = parseInt(result[2], 10);
       timeType = RocketLaunchTimeType.ESTIMATED;
-    } else if (regexps.date.fullMonthAndDay.test(rawDate)) {
-      const result = regexps.date.fullMonthAndDay.exec(rawDate);
+    } else if (rawDate.match(regexps.date.fullMonthAndDay)) {
+      const result = rawDate.match(regexps.date.fullMonthAndDay);
       if (!result || result.length < 3) {
         throw ImpossibleRegexError;
       }
       month = fullMonths.indexOf(result[1].toUpperCase());
       day = parseInt(result[2], 10);
       timeType = RocketLaunchTimeType.ESTIMATED;
-    } else if (regexps.date.month.test(rawDate)) {
-      const result = regexps.date.month.exec(rawDate);
+    } else if (rawDate.match(regexps.date.month)) {
+      const result = rawDate.match(regexps.date.month);
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
@@ -103,8 +103,8 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
         month: 1,
       }).day; // Get the last day of the month
       timeType = RocketLaunchTimeType.ESTIMATED;
-    } else if (regexps.date.season.test(rawDate)) {
-      const result = regexps.date.season.exec(rawDate);
+    } else if (rawDate.match(regexps.date.season)) {
+      const result = rawDate.match(regexps.date.season);
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
@@ -117,8 +117,8 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
         month: 1,
       }).day; // Get the last day of the month
       timeType = RocketLaunchTimeType.ESTIMATED;
-    } else if (regexps.date.quarter.test(rawDate)) {
-      const result = regexps.date.quarter.exec(rawDate);
+    } else if (rawDate.match(regexps.date.quarter)) {
+      const result = rawDate.match(regexps.date.quarter);
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
@@ -131,8 +131,8 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
         month: 1,
       }).day; // Get the last day of the month
       timeType = RocketLaunchTimeType.ESTIMATED;
-    } else if (regexps.date.year.test(rawDate)) {
-      const result = regexps.date.year.exec(rawDate);
+    } else if (rawDate.match(regexps.date.year)) {
+      const result = rawDate.match(regexps.date.year);
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
@@ -162,24 +162,24 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
     let hour = -1;
     let minute = -1;
     let second: number | null = null;
-    if (regexps.time.standardTime.test(rawTime)) {
-      const result = regexps.time.standardTime.exec(rawTime);
+    if (rawTime.match(regexps.time.standardTime)) {
+      const result = rawTime.match(regexps.time.standardTime);
       if (!result || result.length < 3) {
         throw new Error('Impressible regex condition');
       }
       hour = parseInt(result[1], 10);
       minute = parseInt(result[2], 10);
       timeType = RocketLaunchTimeType.EXACT;
-    } else if (regexps.time.standardTimeWithSeconds.test(rawTime)) {
-      const result = regexps.time.standardTimeWithSeconds.exec(rawTime);
+    } else if (rawTime.match(regexps.time.standardTimeWithSeconds)) {
+      const result = rawTime.match(regexps.time.standardTimeWithSeconds);
       if (!result || result.length < 4) {
         throw ImpossibleRegexError;
       }
       hour = parseInt(result[1], 10);
       minute = parseInt(result[2], 10);
       second = parseInt(result[3], 10);
-    } else if (regexps.time.approximateTime.test(rawTime)) {
-      const result = regexps.time.approximateTime.exec(rawTime);
+    } else if (rawTime.match(regexps.time.approximateTime)) {
+      const result = rawTime.match(regexps.time.approximateTime);
       if (!result || result.length < 4) {
         throw ImpossibleRegexError;
       }
@@ -253,8 +253,8 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
       if (
         rawLaunchTime === null
         || rawLaunchLocation === null
-        || !/^Launch (time|window): .+$/.test(rawLaunchTime)
-        || !/^Launch site: .+$/.test(rawLaunchLocation)
+        || !rawLaunchTime.match(/^Launch (time|window): .+$/)
+        || !rawLaunchLocation.match(/^Launch site: .+$/)
       ) {
         throw new Error(`Unexpected format in launch data ${i} ${dataContainer.textContent}`);
       }

@@ -57,7 +57,7 @@ const collect = async () : Promise<NotamDataReportType> => {
       if (notamId === null) {
         throw new Error('Unexpected null link in notam row in notam scraper');
       }
-      if (!notamLinkRegexp.test(notamId)) {
+      if (!notamId.match(notamLinkRegexp)) {
         throw new Error('Unknown notam link format');
       }
       notamLinksToVisit.push([idToFullNotamUrl(notamId), notamId]);
@@ -129,10 +129,10 @@ const collect = async () : Promise<NotamDataReportType> => {
       }
       if (altitudeIndex > -1) {
         const altitudeRowData = secondaryDataComponents[altitudeIndex].textContent || '';
-        if (unlimitedAltitudeRegexp.test(altitudeRowData)) {
+        if (altitudeRowData.match(unlimitedAltitudeRegexp)) {
           notamObject.altitude = -1;
-        } else if (fixedAltitudeRegexp.test(altitudeRowData)) {
-          const result = fixedAltitudeRegexp.exec(altitudeRowData) || [];
+        } else if (altitudeRowData.match(fixedAltitudeRegexp)) {
+          const result = altitudeRowData.match(fixedAltitudeRegexp) || [];
           if (result[1]) {
             notamObject.altitude = parseInt(result[1], 10) || -2;
           }
