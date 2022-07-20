@@ -6,62 +6,37 @@ import {
   RocketLaunchTimeType,
   RocketLaunchType,
 } from '../types/databaseModels';
-import { ScraperControllerType } from '../types/globalTypes';
+import {
+  ScraperControllerType,
+  ImpossibleRegexError,
+  abbreviatedMonths,
+  fullMonths,
+} from '../types/globalTypes';
 import {
   defaultLaunchPrototypeObject,
   getAffiliations,
   RocketLaunchDataReportType,
 } from '../types/scraperLaunchTypes';
 
-const abbreviatedMonths = [
-  '',
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sept',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-const fullMonths = [
-  '',
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
 const seasonToMonth: Record<string, number> = {
-  Spring: 5,
-  Summer: 8,
-  Fall: 11,
-  Winter: 2,
+  SPRING: 5,
+  SUMMER: 8,
+  FALL: 11,
+  WINTER: 2,
 };
 const quarterToMonth: Record<string, number> = {
-  '1st': 3,
-  '2nd': 6,
-  '3rd': 9,
-  '4th': 12,
+  '1ST': 3,
+  '2ND': 6,
+  '3RD': 9,
+  '4TH': 12,
 };
 const regexps = {
   date: {
-    abbreviatedMonthAndDay: /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Oct|Nov|Dec)\. (\d\d?)/,
-    fullMonthAndDay: /(January|February|March|April|May|June|July|August|September|October|November|December) (\d\d?)/,
-    month: /(January|February|March|April|May|June|July|August|September|October|November|December)/,
-    quarter: /(1st|2nd|3rd|4th) Quarter/,
-    season: /(Spring|Summer|Fall|Winter)/,
+    abbreviatedMonthAndDay: /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Oct|Nov|Dec)\. (\d\d?)/i,
+    fullMonthAndDay: /(January|February|March|April|May|June|July|August|September|October|November|December) (\d\d?)/i,
+    month: /(January|February|March|April|May|June|July|August|September|October|November|December)/i,
+    quarter: /(1st|2nd|3rd|4th) Quarter/i,
+    season: /(Spring|Summer|Fall|Winter)i/,
     year: /.+[ -](\d{4})/,
   },
   time: {
@@ -73,7 +48,6 @@ const regexps = {
     flexibleTime: /./,
   },
 };
-const ImpossibleRegexError = new Error('Impossible regex condition');
 
 const stringToTimeObject = (rawDate: string, rawTime: string) => {
   try {
@@ -104,7 +78,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 3) {
         throw ImpossibleRegexError;
       }
-      month = abbreviatedMonths.indexOf(result[1]);
+      month = abbreviatedMonths.indexOf(result[1].toUpperCase());
       day = parseInt(result[2], 10);
       timeType = RocketLaunchTimeType.ESTIMATED;
     } else if (regexps.date.fullMonthAndDay.test(rawDate)) {
@@ -112,7 +86,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 3) {
         throw ImpossibleRegexError;
       }
-      month = fullMonths.indexOf(result[1]);
+      month = fullMonths.indexOf(result[1].toUpperCase());
       day = parseInt(result[2], 10);
       timeType = RocketLaunchTimeType.ESTIMATED;
     } else if (regexps.date.month.test(rawDate)) {
@@ -120,7 +94,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
-      month = fullMonths.indexOf(result[1]);
+      month = fullMonths.indexOf(result[1].toUpperCase());
       if (month < currentMonth) {
         year++;
       }
@@ -134,7 +108,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
-      month = seasonToMonth[result[1]];
+      month = seasonToMonth[result[1].toUpperCase()];
       if (month < currentMonth) {
         year++;
       }
@@ -148,7 +122,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
-      month = quarterToMonth[result[1]];
+      month = quarterToMonth[result[1].toUpperCase()];
       if (month < currentMonth) {
         year++;
       }

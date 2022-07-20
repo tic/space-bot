@@ -2,12 +2,23 @@
 /* eslint-disable no-shadow */
 import { ObjectId } from 'mongodb';
 
+export enum RoadClosureTypeEnum {
+  PRIMARY = 'PRIMARY',
+  ALTERNATIVE = 'ALTERNATIVE',
+};
+
+export enum BeachStatusEnum {
+  CLOSURE_CANCELED = 'CLOSURE_CANCELED',
+  CLOSURE_SCHEDULED = 'CLOSURE_CANCELED',
+  CLOSURE_POSSIBLE = 'CLOSURE_POSSIBLE',
+}
+
 export type RoadClosureType = {
-  day: string,
+  id: string,
   startDate: number,
-  status: string,
+  status: BeachStatusEnum,
   stopDate: number,
-  type: string,
+  type: RoadClosureTypeEnum,
 };
 
 export type WeatherForecastType = {
@@ -104,7 +115,6 @@ export enum LaunchAffiliationType {
 };
 
 export type RocketLaunchType = {
-  _id?: ObjectId,
   affiliations: LaunchAffiliationType[],
   date: string,
   description: string,

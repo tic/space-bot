@@ -39,3 +39,37 @@ export type GlobalConfigType = {
     password: string,
   },
 };
+
+export const ImpossibleRegexError = new Error('Impossible regex condition');
+
+export const abbreviatedMonths = [
+  '',
+  'JAN',
+  'FEB',
+  'MAR',
+  'APR',
+  'MAY',
+  'JUN',
+  'JUL',
+  'AUG',
+  'SEPT',
+  'OCT',
+  'NOV',
+  'DEC',
+];
+
+export const fullMonths = [
+  '',
+  'JANUARY',
+  'FEBRUARY',
+  'MARCH',
+  'APRIL',
+  'MAY',
+  'JUNE',
+  'JULY',
+  'AUGUST',
+  'SEPTEMBER',
+  'OCTOBER',
+  'NOVEMBER',
+  'DECEMBER',
+];
