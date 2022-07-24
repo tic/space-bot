@@ -10,33 +10,43 @@ export type ScraperControllerType = {
 };
 
 export type GlobalConfigType = {
-  scrapers: {
-    boosters: {
-      url: string,
-    },
-    closures: {
-      url: string,
-    },
-    launches: {
-      url: string,
-    },
-    notams: {
-      url: string,
-      base: string,
-    },
-    weather: {
-      url: string,
-    },
-  },
   discord: {
     secret: string,
     username: string,
   },
   mongo: {
-    url: string,
-    primaryDatabase: string,
-    username: string,
     password: string,
+    primaryDatabase: string,
+    url: string,
+    username: string,
+  },
+  scrapers: {
+    boosters: {
+      intervalMs: number,
+      identifier: string,
+      url: string,
+    },
+    closures: {
+      intervalMs: number,
+      identifier: string,
+      url: string,
+    },
+    launches: {
+      intervalMs: number,
+      identifier: string,
+      url: string,
+    },
+    notams: {
+      base: string,
+      identifier: string,
+      intervalMs: number,
+      url: string,
+    },
+    weather: {
+      intervalMs: number,
+      identifier: string,
+      url: string,
+    },
   },
 };
 
