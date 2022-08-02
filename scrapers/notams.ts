@@ -2,9 +2,12 @@ import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import { DateTime } from 'luxon';
 import { config } from '../config';
+import { collections, createBulkWriteArray } from '../services/database.service';
+import { logError } from '../services/logger.service';
 import { NotamType } from '../types/databaseModels';
-import { ScraperControllerType } from '../types/globalTypes';
+import { ChangeReport, ScraperControllerType } from '../types/globalTypes';
 import { NotamDataReportType, NotamTemplateType } from '../types/scraperNotamTypes';
+import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 const timestampFormat = 'MMMM dd\', \'yyyy\' at \'HHmm\' UTC\'Z';
 const notamLinkRegexp = /\d\/\d{4}/;
@@ -155,9 +158,54 @@ const collect = async () : Promise<NotamDataReportType> => {
   }
 };
 
-const mergeToDatabase = async (data: NotamDataReportType) : Promise<boolean> => {
-  console.log(data);
-  return true;
+const mergeToDatabase = async (report: NotamDataReportType) : Promise<ChangeReport> => {
+  if (!report.success || report.data === null) {
+    return {
+      success: false,
+      changes: null,
+    };
+  }
+  try {
+    if (report.data.length === 0) {
+      return {
+        success: true,
+        changes: [],
+      };
+    }
+    const { bulkWriteArray, changeItems } = await createBulkWriteArray(
+      collections.notams,
+      { $or: report.data.map((notamData) => notamData.notamId) },
+      report,
+      (currentDbItem: NotamType) => (
+        testDbItem: NotamType,
+      ) => currentDbItem.notamId === testDbItem.notamId,
+      (dbItem: NotamType) => ({ notamId: dbItem.notamId }),
+    );
+    if (bulkWriteArray.length === 0) {
+      return {
+        success: true,
+        changes: [],
+      };
+    }
+    const result = await collections.notams.bulkWrite(bulkWriteArray);
+    if (result.upsertedCount + result.modifiedCount !== bulkWriteArray.length) {
+      return {
+        success: false,
+        changes: null,
+        message: 'database performed an unexpected number of results',
+      };
+    }
+    return {
+      success: true,
+      changes: changeItems,
+    };
+  } catch (error) {
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_notams', String(error));
+    return {
+      success: false,
+      changes: null,
+    };
+  }
 };
 
 export default {

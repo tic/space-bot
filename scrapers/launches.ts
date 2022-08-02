@@ -2,6 +2,8 @@ import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import { DateTime } from 'luxon';
 import { config } from '../config';
+import { collections, createBulkWriteArray } from '../services/database.service';
+import { logError } from '../services/logger.service';
 import {
   RocketLaunchTimeType,
   RocketLaunchType,
@@ -11,12 +13,14 @@ import {
   ImpossibleRegexError,
   abbreviatedMonths,
   fullMonths,
+  ChangeReport,
 } from '../types/globalTypes';
 import {
   defaultLaunchPrototypeObject,
   getAffiliations,
   RocketLaunchDataReportType,
 } from '../types/scraperLaunchTypes';
+import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 const seasonToMonth: Record<string, number> = {
   SPRING: 5,
@@ -36,14 +40,14 @@ const regexps = {
     fullMonthAndDay: /(January|February|March|April|May|June|July|August|September|October|November|December) (\d\d?)/i,
     month: /(January|February|March|April|May|June|July|August|September|October|November|December)/i,
     quarter: /(1st|2nd|3rd|4th) Quarter/i,
-    season: /(Spring|Summer|Fall|Winter)i/,
+    season: /(Spring|Summer|Fall|Winter)/i,
     year: /.+[ -](\d{4})/,
   },
   time: {
     standardTime: /^(\d\d)(\d\d) GMT/,
     standardTimeWithSeconds: /^(\d\d)(\d\d):(\d\d) GMT/,
     approximateTime: /(Approx\.|Approximately) (\d\d)(\d\d)(:\d\d)? GMT/,
-    launchWindow: /./,
+    launchWindow: /(\d\d)(\d\d)-(\d\d)(\d\d) GMT/,
     launchWindowWithSeconds: /./,
     flexibleTime: /./,
   },
@@ -142,7 +146,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       timeType = RocketLaunchTimeType.ESTIMATED;
     }
     if (day === -1 || month === -1) {
-      throw new Error('Failed to parse day/month from date');
+      throw new Error(`Failed to parse day/month from date: ${rawDate}, ${rawTime}`);
     }
 
     // Step 2: Get a specific time or window to work with
@@ -162,10 +166,11 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
     let hour = -1;
     let minute = -1;
     let second: number | null = null;
+    let stopDate: number | null = null;
     if (rawTime.match(regexps.time.standardTime)) {
       const result = rawTime.match(regexps.time.standardTime);
       if (!result || result.length < 3) {
-        throw new Error('Impressible regex condition');
+        throw ImpossibleRegexError;
       }
       hour = parseInt(result[1], 10);
       minute = parseInt(result[2], 10);
@@ -187,7 +192,30 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       minute = parseInt(result[3], 10);
       second = result[4] ? parseInt(result[3], 10) : null;
       timeType = RocketLaunchTimeType.APPROXIMATE;
+    } else if (rawTime.match(regexps.time.launchWindow)) {
+      const result = rawTime.match(regexps.time.launchWindow);
+      if (!result || result.length < 5) {
+        throw ImpossibleRegexError;
+      }
+      hour = parseInt(result[1], 10);
+      minute = parseInt(result[2], 10);
+      const stopHour = parseInt(result[3], 10);
+      const stopMinute = parseInt(result[4], 10);
+      stopDate = DateTime.utc(
+        year,
+        month,
+        day,
+        stopHour,
+        stopMinute,
+      ).plus({
+        days: stopHour < hour ? 1 : 0,
+      }).toUnixInteger();
+      timeType = RocketLaunchTimeType.WINDOW;
     }
+    if (hour === -1 || minute === -1) {
+      throw new Error(`Failed to parse minute/second from date: ${rawDate}, ${rawTime}`);
+    }
+
     return {
       type: timeType,
       isNET: isNETDate,
@@ -199,7 +227,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
         minute,
         second || 0,
       ).toUnixInteger(),
-      stopDate: null,
+      stopDate,
     };
   } catch (error) {
     console.error(error);
@@ -269,11 +297,11 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
 
       if (!Object.values(launchPrototype).includes(null)) {
         launches.push({
+          mission: launchPrototype.mission || '',
           affiliations: launchPrototype.affiliations || [],
           date: launchPrototype.date || '',
           description: launchPrototype.description || '',
           launchSite: launchPrototype.launchSite || '',
-          mission: launchPrototype.mission || '',
           time: stringToTimeObject(launchPrototype.date || '', launchPrototype.timeData),
           vehicle: launchPrototype.vehicle || '',
         });
@@ -282,9 +310,13 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
     // Comment this out when working on handling new formats
     // console.log(
     //   launches
-    //     .filter((launch) => launch.time.type === RocketLaunchTimeType.UNKNOWN)
+    //     .filter((launch) => launch.time.type === RocketLaunchTimeType.WINDOW)
     //     .map((launch) => [launch.mission, launch.time]),
     // );
+    // return {
+    //   success: true,
+    //   data: [],
+    // }
     return {
       success: true,
       data: launches,
@@ -298,9 +330,53 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
   }
 };
 
-const mergeToDatabase = async (data: RocketLaunchDataReportType) : Promise<boolean> => {
-  console.log(data);
-  return false;
+const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<ChangeReport> => {
+  if (!report.success || report.data === null) {
+    return {
+      success: false,
+      changes: null,
+    };
+  }
+  try {
+    if (report.data.length === 0) {
+      return {
+        success: true,
+        changes: [],
+      };
+    }
+    const { bulkWriteArray, changeItems } = await createBulkWriteArray(
+      collections.launches,
+      { $or: report.data.map((launchData) => ({ mission: launchData.mission })) },
+      report,
+      (currentDbItem: RocketLaunchType) => (
+        testDbItem: RocketLaunchType,
+      ) => currentDbItem.mission === testDbItem.mission,
+      (dbItem: RocketLaunchType) => ({ mission: dbItem.mission }),
+    );
+    if (bulkWriteArray.length === 0) {
+      return {
+        success: true,
+        changes: [],
+      };
+    }
+    const result = await collections.launches.bulkWrite(bulkWriteArray);
+    if (result.upsertedCount + result.modifiedCount !== bulkWriteArray.length) {
+      return {
+        success: false,
+        changes: null,
+      };
+    }
+    return {
+      success: true,
+      changes: changeItems,
+    };
+  } catch (error) {
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_launches', String(error));
+    return {
+      success: false,
+      changes: null,
+    };
+  }
 };
 
 export default {

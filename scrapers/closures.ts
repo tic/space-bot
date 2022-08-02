@@ -2,8 +2,11 @@ import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import { DateTime } from 'luxon';
 import { config } from '../config';
+import { collections, createBulkWriteArray } from '../services/database.service';
+import { logError } from '../services/logger.service';
 import { BeachStatusEnum, RoadClosureType, RoadClosureTypeEnum } from '../types/databaseModels';
 import {
+  ChangeReport,
   fullMonths,
   ImpossibleRegexError,
   ScraperControllerType,
@@ -15,6 +18,7 @@ import {
   primaryDateRegexp,
   timeRegexp,
 } from '../types/scraperClosureTypes';
+import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 const collect = async () : Promise<ClosureDataReportType> => {
   try {
@@ -87,7 +91,7 @@ const collect = async () : Promise<ClosureDataReportType> => {
           stopHour += 12;
         }
         closures.push({
-          id: `${closureIndex++}_${parsedDate.month}.${parsedDate.day}.${parsedDate.year}`,
+          closureCode: `${closureIndex++}_${parsedDate.month}.${parsedDate.day}.${parsedDate.year}`,
           startDate: parsedDate.set({
             hour: startHour,
             minute: startMinute,
@@ -117,9 +121,54 @@ const collect = async () : Promise<ClosureDataReportType> => {
   }
 };
 
-const mergeToDatabase = async (data: ClosureDataReportType) : Promise<boolean> => {
-  console.log(data);
-  return true;
+const mergeToDatabase = async (report: ClosureDataReportType) : Promise<ChangeReport> => {
+  if (!report.success || report.data === null) {
+    return {
+      success: false,
+      changes: null,
+    };
+  }
+  try {
+    if (report.data.length === 0) {
+      return {
+        success: true,
+        changes: [],
+      };
+    }
+    const { bulkWriteArray, changeItems } = await createBulkWriteArray(
+      collections.roadClosures,
+      { $or: report.data.map((closureData) => closureData.closureCode) },
+      report,
+      (currentDbItem: RoadClosureType) => (
+        testDbItem: RoadClosureType,
+      ) => currentDbItem.closureCode === testDbItem.closureCode,
+      (dbItem: RoadClosureType) => ({ closureCode: dbItem.closureCode }),
+    );
+    if (bulkWriteArray.length === 0) {
+      return {
+        success: true,
+        changes: [],
+      };
+    }
+    const result = await collections.roadClosures.bulkWrite(bulkWriteArray);
+    if (result.upsertedCount + result.modifiedCount !== bulkWriteArray.length) {
+      return {
+        success: false,
+        changes: null,
+        message: 'database performed an unexpected number of results',
+      };
+    }
+    return {
+      success: true,
+      changes: changeItems,
+    };
+  } catch (error) {
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_closure', String(error));
+    return {
+      success: false,
+      changes: null,
+    };
+  };
 };
 
 export default {

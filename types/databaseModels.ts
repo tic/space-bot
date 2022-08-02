@@ -14,6 +14,7 @@ export enum BeachStatusEnum {
 }
 
 export interface RoadClosureType extends ScrapedDataType {
+  closureCode: string,
   startDate: number,
   status: BeachStatusEnum,
   stopDate: number,
