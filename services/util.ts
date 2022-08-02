@@ -1,4 +1,4 @@
-import { ScraperControllerType } from '../types/globalTypes';
+import { fullMonths, ScraperControllerType } from '../types/globalTypes';
 import { logError } from './logger.service';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
@@ -24,5 +24,23 @@ export const wrapScraperHandler = (
     return;
   }
   // The scraper controller needs to handle the change report
-  console.log(changeReport.changes);
+  controller.handleChanges(changeReport);
+};
+
+export const unixTimeToHoursAndMinutes = (date: number) => {
+  const dateObj = new Date(date);
+  const minutes = dateObj.getMinutes();
+  const hours = dateObj.getHours();
+  const minuteStr = minutes < 10 ? `0${minutes}` : minutes.toString();
+  const hourStr = hours < 10 ? `0${hours}` : hours.toString();
+  return `${hourStr}:${minuteStr}`;
+};
+
+export const unixTimeToBoosterDate = (date: number) => {
+  const dateObj = new Date(date);
+  const dayOfMonth = dateObj.getUTCDate();
+  const fullMonthUppercase = fullMonths[dateObj.getUTCMonth() + 1];
+  const fullMonth = fullMonthUppercase.charAt(0) + fullMonthUppercase.slice(1).toLowerCase();
+  const year = dateObj.getUTCFullYear();
+  return `${dayOfMonth} ${fullMonth} ${year}`;
 };

@@ -1,12 +1,15 @@
 import axios from 'axios';
+import { EmbedAuthorData, MessageEmbed } from 'discord.js';
 import { JSDOM } from 'jsdom';
 import { DateTime } from 'luxon';
 import { config } from '../config';
 import { collections, createBulkWriteArray } from '../services/database.service';
+import { announce } from '../services/discord.service';
 import { logError } from '../services/logger.service';
 import { BeachStatusEnum, RoadClosureType, RoadClosureTypeEnum } from '../types/databaseModels';
 import {
   ChangeReport,
+  ChangeReportTypeEnum,
   fullMonths,
   ImpossibleRegexError,
   ScraperControllerType,
@@ -18,6 +21,7 @@ import {
   primaryDateRegexp,
   timeRegexp,
 } from '../types/scraperClosureTypes';
+import { ChannelClassEnum } from '../types/serviceDiscordTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 const collect = async () : Promise<ClosureDataReportType> => {
@@ -171,7 +175,100 @@ const mergeToDatabase = async (report: ClosureDataReportType) : Promise<ChangeRe
   };
 };
 
+const handleChanges = async (report: ChangeReport) => {
+  if (!report.success || !report.changes || report.changes.length === 0) {
+    return;
+  }
+  report.changes.forEach(async (changeItem) => {
+    const newData = changeItem.data as RoadClosureType;
+    const oldData = changeItem.originalData as RoadClosureType;
+    let embed: MessageEmbed | null = null;
+    if (changeItem.changeType === ChangeReportTypeEnum.NEW) {
+      embed = new MessageEmbed()
+        .setColor('#00ff00')
+        .setTitle('Road Closure Posted')
+        .setURL('https://cameroncountytx.gov/spacex/')
+        .setAuthor({
+          name: 'Highway 4 - Cameron County',
+          url: 'https://cameroncountytx.gov/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png',
+          iconURL: 'https://cameroncountytx.gov/spacex/',
+        })
+        .setDescription('A new closure of Highway 4 in Boca Chica has been posted.')
+        .addFields(
+          {
+            name: 'Type',
+            value: newData.type,
+            inline: true,
+          },
+          {
+            name: 'Status',
+            value: newData.status,
+            inline: true,
+          },
+          {
+            name: 'Closure Begins',
+            value: `<t:${newData.startDate}:F>`,
+          },
+          {
+            name: 'Closure Ends',
+            value: `<t:${newData.stopDate}:F>`,
+          },
+        )
+        .setTimestamp();
+    } else if (changeItem.changeType === ChangeReportTypeEnum.UPDATED) {
+      embed = new MessageEmbed()
+        .setColor('#ffff00')
+        .setTitle('Road Closure Modification')
+        .setURL('https://cameroncountytx.gov/spacex/')
+        .setAuthor({
+          name: 'Highway 4 - Cameron County',
+          iconURL: 'https://cameroncountytx.gov/wp-content/uploads/2020/02/CCSEAL_TRANSPARENT.png',
+          url: 'https://cameroncountytx.gov/spacex/',
+        } as EmbedAuthorData)
+        .setDescription('Details surrounding a closure of Highway 4 in Boca Chica have changed.')
+        .addFields(
+          {
+            name: 'Type',
+            value: oldData.type === newData.type ? newData.type : `~~${oldData.type}~~\n${newData.type}`,
+            inline: true,
+          },
+          {
+            name: 'Status',
+            value: oldData.status === newData.status ? newData.status : `~~${oldData.status}~~\n${newData.status}`,
+            inline: true,
+          },
+          {
+            name: 'Closure Begins',
+            value: oldData.startDate === newData.startDate
+              ? `<t:${newData.startDate}:F>`
+              : `~~<t:${oldData.startDate}:F>~~\n<t:${newData.startDate}:F>`,
+          },
+          {
+            name: 'Closure Ends',
+            value: oldData.stopDate === newData.stopDate
+              ? `<t:${newData.stopDate}:F>`
+              : `~~<t:${oldData.stopDate}:F>~~\n<t:${newData.stopDate}:F>`,
+          },
+        )
+        .setTimestamp();
+    }
+    if (!embed) {
+      return;
+    }
+    const result = await announce(
+      ChannelClassEnum.CLOSURE_UPDATE,
+      undefined,
+      embed,
+      [],
+    );
+    if (result === false) {
+      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_closures', 'failed to announce closures update');
+    }
+  });
+};
+
 export default {
   collect,
   mergeToDatabase,
+  handleChanges,
 } as ScraperControllerType;

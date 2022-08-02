@@ -1,10 +1,14 @@
 import axios from 'axios';
+import { EmbedAuthorData, MessageEmbed } from 'discord.js';
 import { JSDOM } from 'jsdom';
 import { DateTime } from 'luxon';
 import { config } from '../config';
 import { collections, createBulkWriteArray } from '../services/database.service';
+import { announce } from '../services/discord.service';
 import { logError } from '../services/logger.service';
+import { unixTimeToBoosterDate } from '../services/util';
 import {
+  Falcon9BoosterType,
   RocketLaunchTimeType,
   RocketLaunchType,
 } from '../types/databaseModels';
@@ -14,12 +18,15 @@ import {
   abbreviatedMonths,
   fullMonths,
   ChangeReport,
+  ChangeReportTypeEnum,
 } from '../types/globalTypes';
+import { BoosterTypeToString } from '../types/scraperBoosterTypes';
 import {
   defaultLaunchPrototypeObject,
   getAffiliations,
   RocketLaunchDataReportType,
 } from '../types/scraperLaunchTypes';
+import { ChannelClassEnum } from '../types/serviceDiscordTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 const seasonToMonth: Record<string, number> = {
@@ -379,7 +386,138 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
   }
 };
 
+const formatLaunchTime = ({ time }: RocketLaunchType) => {
+  const prefix = time.isNET ? 'NET' : '';
+  if (time.type === RocketLaunchTimeType.APPROXIMATE) {
+    return `${prefix} Approximately <t:${time.startDate}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.ESTIMATED) {
+    return `${prefix} <t:${time.startDate}:F> (estimated)`;
+  }
+  if (time.type === RocketLaunchTimeType.EXACT) {
+    return `${prefix} <t:${time.startDate}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.EXACT_SECOND) {
+    return `${prefix} <t:${time.startDate}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.EXACT_SECOND_WINDOW) {
+    return `${prefix} Window opens: <t:${time.startDate}:F>\nWindow closes: <t:${time.stopDate}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.FLEXIBLE) {
+    return `${prefix} Opportunity A: <t:${time.startDate}:F>\nOpportunity B: <t:${time.stopDate}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.UNDECIDED) {
+    return 'TBD';
+  }
+  if (time.type === RocketLaunchTimeType.WINDOW) {
+    return `${prefix} Window opens: <t:${time.startDate}:F>\nWindow closes: <t:${time.stopDate}:F>`;
+  }
+  return 'TBD';
+};
+
+const handleChanges = async (report: ChangeReport) => {
+  if (!report.success || !report.changes || report.changes.length === 0) {
+    return;
+  }
+  report.changes.forEach(async (changeItem) => {
+    const newData = changeItem.data as RocketLaunchType;
+    const oldData = changeItem.data as RocketLaunchType;
+    const boosters = newData.vehicle === 'Falcon 9' || newData.vehicle === 'Falcon Heavy'
+      ? await collections.boosters.find({
+        assignments: { $elemMatch: { date: unixTimeToBoosterDate(newData.time.startDate) } },
+      }).toArray() as Falcon9BoosterType[]
+      : [];
+    let embed: MessageEmbed | null = null;
+    if (changeItem.changeType === ChangeReportTypeEnum.NEW) {
+      embed = new MessageEmbed()
+        .setColor('#ff0000')
+        .setTitle(`${newData.vehicle} ● ${newData.mission}`)
+        .setURL('https://spaceflightnow.com/launch-schedule/')
+        .setAuthor({
+          name: 'New Launch Posted! | SpaceflightNow',
+          iconUrl: 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg',
+          url: 'https://spaceflightnow.com/',
+        } as EmbedAuthorData)
+        .setDescription(newData.description)
+        .addFields(
+          {
+            name: 'Launch Time',
+            value: formatLaunchTime(newData),
+            inline: true,
+          },
+          {
+            name: 'Launch Site',
+            value: newData.launchSite,
+            inline: false,
+          },
+        )
+        .setTimestamp();
+    } else if (changeItem.changeType === ChangeReportTypeEnum.UPDATED) {
+      const oldTimeDisplay = formatLaunchTime(oldData);
+      const newTimeDisplay = formatLaunchTime(newData);
+      if (oldTimeDisplay === newTimeDisplay) {
+        return;
+      }
+      embed = new MessageEmbed()
+        .setColor('#ffff00')
+        .setTitle(`${newData.vehicle} ● ${newData.mission}`)
+        .setURL('https://spaceflightnow.com/launch-schedule/')
+        .setAuthor({
+          name: 'Launch Update! | SpaceflightNow',
+          iconURL: 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg',
+          url: 'https://spaceflightnow.com/',
+        } as EmbedAuthorData)
+        .setDescription(newData.description)
+        .addFields(
+          {
+            name: 'Launch Time',
+            value: oldTimeDisplay === newTimeDisplay
+              ? newTimeDisplay
+              : `~~${oldTimeDisplay}~~\n${newTimeDisplay}`,
+            inline: true,
+          },
+          {
+            name: 'Launch Site',
+            value: oldData.launchSite === newData.launchSite
+              ? newData.launchSite
+              : `~~${oldData.launchSite}~~\n${newData.launchSite}`,
+            inline: false,
+          },
+        )
+        .setTimestamp();
+    }
+    if (embed && boosters.length > 0) {
+      boosters.forEach((booster) => {
+        const currentAssignment = booster.assignments[booster.assignments.length - 1];
+        const details = [
+          `- Flight no. ${booster.assignments.length}`,
+          currentAssignment.recoveryDetails.attempted
+            ? `- Landing site: ${currentAssignment.recoveryDetails.location}`
+            : '- Expendable -- no landing attempt',
+        ];
+        embed?.addField(
+          `Booster ${booster.boosterSN} ${BoosterTypeToString[booster.currentClassification]}`,
+          details.join('\n'),
+          false,
+        );
+      });
+    } else if (!embed) {
+      return;
+    }
+    const result = await announce(
+      ChannelClassEnum.CLOSURE_UPDATE,
+      undefined,
+      embed,
+      [],
+    );
+    if (result === false) {
+      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_launches', 'failed to announce launch update');
+    }
+  });
+};
+
 export default {
   collect,
   mergeToDatabase,
+  handleChanges,
 } as ScraperControllerType;

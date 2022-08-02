@@ -190,7 +190,12 @@ const mergeToDatabase = async (report: BoosterDataReportType) : Promise<ChangeRe
   }
 };
 
+const handleChanges = async () => {
+  // Currently, boosters don't post any updates...
+};
+
 export default {
   collect,
   mergeToDatabase,
+  handleChanges,
 } as ScraperControllerType;

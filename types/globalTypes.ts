@@ -39,6 +39,7 @@ export type ScraperName = 'boosters' |
 export type ScraperControllerType = {
   collect: () => Promise<ScrapedDataReportType>,
   mergeToDatabase: (arg0: ScrapedDataReportType) => Promise<ChangeReport>,
+  handleChanges: (arg0: ChangeReport) => void;
 };
 
 export type GlobalConfigType = {
