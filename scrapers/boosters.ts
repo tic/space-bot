@@ -1,14 +1,17 @@
 import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import { config } from '../config';
+import { collections, createBulkWriteArray } from '../services/database.service';
+import { logError } from '../services/logger.service';
 import {
   f9BoosterClassificationMap,
   F9BoosterClassificationType,
   Falcon9Assignment,
   Falcon9BoosterType,
 } from '../types/databaseModels';
-import { ScraperControllerType } from '../types/globalTypes';
+import { ChangeReport, ScraperControllerType } from '../types/globalTypes';
 import { BoosterDataReportType } from '../types/scraperBoosterTypes';
+import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 type ColumnName = 'boosterSN'
   | 'boosterType'
@@ -94,9 +97,6 @@ const collect = async () : Promise<BoosterDataReportType> => {
       const mostRecentAssignment = rawAssignments[rawAssignments.length - 1];
       return {
         boosterSN,
-        currentClassification: f9BoosterClassificationMap[
-          mostRecentAssignment.boosterType as string
-        ] || F9BoosterClassificationType.UNKNOWN,
         assignments: rawAssignments.map((rawAssignment, index) => {
           const [launchStatus, launchLocation] = (rawAssignment.launchDetails as string).split(' ');
           const assignment: Falcon9Assignment = {
@@ -121,6 +121,9 @@ const collect = async () : Promise<BoosterDataReportType> => {
           }
           return assignment;
         }),
+        currentClassification: f9BoosterClassificationMap[
+          mostRecentAssignment.boosterType as string
+        ] || F9BoosterClassificationType.UNKNOWN,
         status: mostRecentAssignment.status as string,
       };
     });
@@ -137,9 +140,54 @@ const collect = async () : Promise<BoosterDataReportType> => {
   }
 };
 
-const mergeToDatabase = async (data: BoosterDataReportType) : Promise<boolean> => {
-  console.log(data);
-  return false;
+const mergeToDatabase = async (report: BoosterDataReportType) : Promise<ChangeReport> => {
+  if (!report.success || report.data === null) {
+    return {
+      success: false,
+      changes: null,
+    };
+  }
+  try {
+    if (report.data.length === 0) {
+      return {
+        success: true,
+        changes: [],
+      };
+    }
+    const { bulkWriteArray, changeItems } = await createBulkWriteArray(
+      collections.boosters,
+      { $or: report.data.map((boosterData) => ({ boosterSN: boosterData.boosterSN })) },
+      report,
+      (currentDbItem: Falcon9BoosterType) => (
+        testDbItem: Falcon9BoosterType,
+      ) => currentDbItem.boosterSN === testDbItem.boosterSN,
+      (dbItem: Falcon9BoosterType) => ({ boosterSN: dbItem.boosterSN }),
+    );
+    if (bulkWriteArray.length === 0) {
+      return {
+        success: true,
+        changes: [],
+      };
+    }
+    const result = await collections.boosters.bulkWrite(bulkWriteArray);
+    if (result.upsertedCount + result.modifiedCount !== bulkWriteArray.length) {
+      return {
+        success: false,
+        changes: null,
+        message: 'database performed an unexpected number of results',
+      };
+    }
+    return {
+      success: true,
+      changes: changeItems,
+    };
+  } catch (error) {
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_booster', String(error));
+    return {
+      success: false,
+      changes: null,
+    };
+  }
 };
 
 export default {

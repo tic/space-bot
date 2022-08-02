@@ -43,6 +43,7 @@
     "require-await": "off",
     "arrow-parens": ["error", "always"],
     "no-plusplus": "off",
-    "no-continue": "off"
+    "no-continue": "off",
+    "no-underscore-dangle": "off"
   }
 }

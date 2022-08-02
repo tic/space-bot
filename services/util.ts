@@ -18,7 +18,11 @@ export const wrapScraperHandler = (
     logError(LogCategoriesEnum.SCRAPE_FAILURE, identifier);
     return;
   }
-  if (await controller.mergeToDatabase(dataReport) === false) {
-    logError(LogCategoriesEnum.DB_MERGE_FAILURE, identifier);
+  const changeReport = await controller.mergeToDatabase(dataReport);
+  if (changeReport.success === false) {
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, identifier, changeReport.message);
+    return;
   }
+  // The scraper controller needs to handle the change report
+  console.log(changeReport.changes);
 };

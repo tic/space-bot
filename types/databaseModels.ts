@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-shadow */
-import { ObjectId } from 'mongodb';
+import { ScrapedDataType } from './globalTypes';
 
 export enum RoadClosureTypeEnum {
   PRIMARY = 'PRIMARY',
@@ -13,15 +13,14 @@ export enum BeachStatusEnum {
   CLOSURE_POSSIBLE = 'CLOSURE_POSSIBLE',
 }
 
-export type RoadClosureType = {
-  id: string,
+export interface RoadClosureType extends ScrapedDataType {
   startDate: number,
   status: BeachStatusEnum,
   stopDate: number,
   type: RoadClosureTypeEnum,
 };
 
-export type WeatherForecastType = {
+export interface WeatherForecastType extends ScrapedDataType {
   weatherCode: number,
   weatherDesc: string,
   weatherIconUrl: string,
@@ -30,8 +29,7 @@ export type WeatherForecastType = {
   rainInInches: number,
 };
 
-export type WeatherDataType = {
-  _id: ObjectId,
+export interface WeatherDataType extends ScrapedDataType {
   aqi: number | null,
   aqiScheme: number | null,
   aqiString: string | null,
@@ -70,7 +68,6 @@ export type WeatherDataType = {
   wind: number,
   windDirection: number,
   windUnits: string,
-  a: number,
 };
 
 export enum RocketLaunchTimeType {
@@ -114,7 +111,7 @@ export enum LaunchAffiliationType {
   SPACE_LAUNCH_SYSTEM = 'SLS'
 };
 
-export type RocketLaunchType = {
+export interface RocketLaunchType extends ScrapedDataType {
   affiliations: LaunchAffiliationType[],
   date: string,
   description: string,
@@ -129,7 +126,7 @@ export type RocketLaunchType = {
   vehicle: string,
 };
 
-export type NotamType = {
+export interface NotamType extends ScrapedDataType {
   altitude: number,
   imageUrl: string,
   issuedDate: number,
@@ -139,8 +136,7 @@ export type NotamType = {
   stopDate: number,
 };
 
-export type WatchedNotamType = {
-  _id: ObjectId,
+export interface WatchedNotamType extends ScrapedDataType {
   expires: number,
   notamId: string,
 };
@@ -195,8 +191,7 @@ export type Falcon9Assignment = {
   }
 };
 
-export type Falcon9BoosterType = {
-  _id?: ObjectId,
+export interface Falcon9BoosterType extends ScrapedDataType {
   boosterSN: string,
   currentClassification: F9BoosterClassificationType,
   assignments: Falcon9Assignment[],

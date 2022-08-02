@@ -5,7 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "start-dev": "nodemon index.ts",
-    "start": "ts-node index",
+    "start": "/usr/local/bin/ts-node index",
     "lint": "eslint --ext .ts ./"
   },
   "author": "G. Michael Fitzgerald",

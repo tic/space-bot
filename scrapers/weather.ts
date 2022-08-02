@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { config } from '../config';
+import { collections } from '../services/database.service';
+import { logError } from '../services/logger.service';
 import { WeatherDataType } from '../types/databaseModels';
-import { ScraperControllerType } from '../types/globalTypes';
+import { ChangeReport, ChangeReportTypeEnum, ScraperControllerType } from '../types/globalTypes';
 import { WeatherDataReportType } from '../types/scraperWeatherTypes';
+import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 const collect = async () : Promise<WeatherDataReportType> => {
   try {
@@ -79,7 +82,6 @@ const collect = async () : Promise<WeatherDataReportType> => {
         wind: parsedResult.wind,
         windDirection: parsedResult.windDirection,
         windUnits: parsedResult.windUnits,
-        a: parsedResult.a,
       },
     } as WeatherDataReportType;
   } catch (error) {
@@ -90,9 +92,34 @@ const collect = async () : Promise<WeatherDataReportType> => {
   }
 };
 
-const mergeToDatabase = async (data: WeatherDataReportType) : Promise<boolean> => {
-  console.log(data);
-  return true;
+const mergeToDatabase = async (report: WeatherDataReportType) : Promise<ChangeReport> => {
+  if (!report.success || report.data === null) {
+    return {
+      success: false,
+      changes: [],
+    };
+  }
+  try {
+    const result = await collections.weather.findOneAndUpdate(
+      {},
+      { $set: { ...report.data } },
+      { upsert: true },
+    );
+    return {
+      success: result.lastErrorObject !== undefined,
+      changes: [{
+        changeType: ChangeReportTypeEnum.UPDATED,
+        data: report.data,
+        originalData: null,
+      }],
+    };
+  } catch (error) {
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_weather', String(error));
+    return {
+      success: false,
+      changes: null,
+    };
+  }
 };
 
 export default {

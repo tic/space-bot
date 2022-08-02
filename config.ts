@@ -26,28 +26,28 @@ export const getConfig = () : GlobalConfigType => {
   const createdConfig: GlobalConfigType = {
     scrapers: {
       boosters: {
-        intervalMs: parseInt(env('SCRAPER_INTERVALMS_BOOSTER'), 10) || 1800000,
+        intervalMs: parseInt(env('SCRAPER_INTERVALMS_BOOSTER'), 10),
         identifier: 'scraper_booster',
         url: env('SCRAPER_URL_BOOSTER'),
       },
       closures: {
-        intervalMs: parseInt(env('SCRAPER_INTERVALMS_CLOSURES'), 10) || 300000,
+        intervalMs: parseInt(env('SCRAPER_INTERVALMS_CLOSURES'), 10),
         identifier: 'scraper_closure',
         url: env('SCRAPER_URL_CLOSURES'),
       },
       launches: {
-        intervalMs: parseInt(env('SCRAPER_INTERVALMS_LAUNCHES'), 10) || 2400000,
+        intervalMs: parseInt(env('SCRAPER_INTERVALMS_LAUNCHES'), 10),
         identifier: 'scraper_launch',
         url: env('SCRAPER_URL_LAUNCHES'),
       },
       notams: {
         identifier: 'scraper_notam',
         url: env('SCRAPER_URL_NOTAMS'),
-        intervalMs: parseInt(env('SCRAPER_INTERVALMS_NOTAMS'), 10) || 1200000,
+        intervalMs: parseInt(env('SCRAPER_INTERVALMS_NOTAMS'), 10),
         base: env('SCRAPER_URL_NOTAMS_BASE'),
       },
       weather: {
-        intervalMs: parseInt(env('SCRAPER_INTERVALMS_WEATHER'), 10) || 600000,
+        intervalMs: parseInt(env('SCRAPER_INTERVALMS_WEATHER'), 10),
         identifier: 'scraper_weather',
         url: env('SCRAPER_URL_WEATHER'),
       },
@@ -58,7 +58,7 @@ export const getConfig = () : GlobalConfigType => {
     },
     mongo: {
       url: env('MONGO_URL'),
-      primaryDatabase: env('MONGO_PORT'),
+      primaryDatabase: env('MONGO_PRIMARY_DATABASE'),
       username: env('MONGO_USERNAME'),
       password: env('MONGO_PASSWORD'),
     },

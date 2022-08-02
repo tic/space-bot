@@ -9,10 +9,14 @@ import {
   setIntervalAndStart,
   wrapScraperHandler,
 } from './services/util';
+import {
+  ScraperControllerType,
+  ScraperName,
+} from './types/globalTypes';
 
 client.connect();
 
-const keysToControllers = {
+const keysToControllers: Record<string, ScraperControllerType> = {
   boosters: BoosterScraperController,
   closures: ClosureScraperController,
   launches: LaunchScraperController,
@@ -20,7 +24,8 @@ const keysToControllers = {
   weather: WeatherScraperController,
 };
 
-Object.entries(keysToControllers).forEach(([key, controller]) => {
+Object.entries(keysToControllers).forEach(([_key, controller]) => {
+  const key = _key as ScraperName;
   setIntervalAndStart(
     wrapScraperHandler(config.scrapers[key].identifier, controller),
     config.scrapers[key].intervalMs,
