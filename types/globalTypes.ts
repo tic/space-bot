@@ -116,3 +116,13 @@ export const fullMonths = [
   'NOVEMBER',
   'DECEMBER',
 ];
+
+export const fullDays = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];

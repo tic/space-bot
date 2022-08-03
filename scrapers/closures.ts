@@ -6,7 +6,11 @@ import { config } from '../config';
 import { collections, createBulkWriteArray } from '../services/database.service';
 import { announce } from '../services/discord.service';
 import { logError } from '../services/logger.service';
-import { BeachStatusEnum, RoadClosureType, RoadClosureTypeEnum } from '../types/databaseModels';
+import {
+  BeachStatusEnum,
+  RoadClosureType,
+  RoadClosureTypeEnum,
+} from '../types/databaseModels';
 import {
   ChangeReport,
   ChangeReportTypeEnum,
@@ -100,6 +104,7 @@ const collect = async () : Promise<ClosureDataReportType> => {
             hour: startHour,
             minute: startMinute,
           }).plus({ hours: 1 }).toMillis(),
+          status: parsedBeachStatus,
           stopDate: parsedDate.set({
             hour: stopHour,
             minute: stopMinute,
@@ -107,7 +112,6 @@ const collect = async () : Promise<ClosureDataReportType> => {
             days: stopHour < startHour ? 1 : 0,
             hours: 1,
           }).toMillis(),
-          status: parsedBeachStatus,
           type: parsedClosureType,
         });
       }
@@ -141,7 +145,7 @@ const mergeToDatabase = async (report: ClosureDataReportType) : Promise<ChangeRe
     }
     const { bulkWriteArray, changeItems } = await createBulkWriteArray(
       collections.roadClosures,
-      { $or: report.data.map((closureData) => closureData.closureCode) },
+      { $or: report.data.map((closureData) => ({ closureCode: closureData.closureCode })) },
       report,
       (currentDbItem: RoadClosureType) => (
         testDbItem: RoadClosureType,

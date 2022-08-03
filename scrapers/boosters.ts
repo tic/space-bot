@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import { config } from '../config';
-import { collections, createBulkWriteArray } from '../services/database.service';
+import {
+  collections,
+  createBulkWriteArray,
+} from '../services/database.service';
 import { logError } from '../services/logger.service';
 import {
   f9BoosterClassificationMap,

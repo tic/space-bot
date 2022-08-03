@@ -86,7 +86,7 @@ export const createBulkWriteArray = async (
       },
     };
     return {
-      bulkWriteArray: bulkWriteArray.filter((arrayItem) => arrayItem !== undefined) as ArrayItemReturnType[],
+      bulkWriteArray: bulkWriteArray.filter((arrayItem) => arrayItem !== null) as ArrayItemReturnType[],
       changeItems,
     };
   } catch (error) {

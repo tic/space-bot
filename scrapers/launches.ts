@@ -3,7 +3,10 @@ import { EmbedAuthorData, MessageEmbed } from 'discord.js';
 import { JSDOM } from 'jsdom';
 import { DateTime } from 'luxon';
 import { config } from '../config';
-import { collections, createBulkWriteArray } from '../services/database.service';
+import {
+  collections,
+  createBulkWriteArray,
+} from '../services/database.service';
 import { announce } from '../services/discord.service';
 import { logError } from '../services/logger.service';
 import { unixTimeToBoosterDate } from '../services/util';

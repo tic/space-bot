@@ -6,7 +6,11 @@ import { announce } from '../services/discord.service';
 import { logError } from '../services/logger.service';
 import { unixTimeToHoursAndMinutes } from '../services/util';
 import { WeatherDataType } from '../types/databaseModels';
-import { ChangeReport, ChangeReportTypeEnum, ScraperControllerType } from '../types/globalTypes';
+import {
+  ChangeReport,
+  ChangeReportTypeEnum,
+  ScraperControllerType,
+} from '../types/globalTypes';
 import { WeatherDataReportType } from '../types/scraperWeatherTypes';
 import { ChannelClassEnum } from '../types/serviceDiscordTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
