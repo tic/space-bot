@@ -1,6 +1,7 @@
 /* eslint-disable no-shadow */
 /* eslint-disable no-unused-vars */
 import { ObjectId } from 'mongodb';
+import { DiscordServerType } from './serviceDiscordTypes';
 
 export type ScrapedDataType = {
   _id?: ObjectId,
@@ -46,6 +47,7 @@ export type GlobalConfigType = {
   discord: {
     secret: string,
     username: string,
+    servers: DiscordServerType[],
   },
   mongo: {
     password: string,

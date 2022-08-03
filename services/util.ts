@@ -44,3 +44,18 @@ export const unixTimeToBoosterDate = (date: number) => {
   const year = dateObj.getUTCFullYear();
   return `${dayOfMonth} ${fullMonth} ${year}`;
 };
+
+export class Semaphore {
+  p = 0;
+  waiting: Promise<boolean>[] = []
+  constructor(p: number) {
+    if (p < 1) {
+      throw new Error('a semaphore requires a p value > 0');
+    }
+    this.p = p;
+  }
+
+  async acquire() {
+    
+  }
+}

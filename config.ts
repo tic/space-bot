@@ -8,7 +8,7 @@ export const getConfig = () : GlobalConfigType => {
   console.log('[CNFIG] Loading project configuration...');
   const { parsed: parsedEnv }: DotenvConfigOutput = dotenvConfig();
   if (parsedEnv === undefined) {
-    throw new Error();
+    throw new Error('failed to load environment file. does it exist?');
   }
   const missingKeys: string[] = [];
   function env(key: string) {
@@ -55,6 +55,7 @@ export const getConfig = () : GlobalConfigType => {
     discord: {
       secret: env('DISCORD_SECRET'),
       username: env('DISCORD_USERNAME'),
+      servers: [],
     },
     mongo: {
       url: env('MONGO_URL'),
