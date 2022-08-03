@@ -10,3 +10,17 @@ export enum ChannelClassEnum {
   LAUNCH_UPDATE = 'LAUNCH_UPDATE',
   LAUNCH_REMINDER = 'LAUNCH_REMINDER',
 };
+
+export type DiscordRoleType = {
+  id: string,
+  name: string,
+};
+
+export type DiscordChannelType = {
+  id: string,
+};
+
+export type DiscordServerType = {
+  roles: DiscordRoleType[],
+  channels: Record<ChannelClassEnum, DiscordChannelType[]>,
+};

@@ -61,3 +61,19 @@ export const unixTimeToNotamDate = (date: number) => {
   const fullMonth = fullMonthUppercase.charAt(0) + fullMonthUppercase.slice(1).toLowerCase();
   return `${dayOfWeek}, ${fullMonth} ${dayOfMonth}${daySuffix}`;
 };
+export class Semaphore {
+  p = 0;
+
+  waiting: Promise<boolean>[] = [];
+
+  constructor(p: number) {
+    if (p < 1) {
+      throw new Error('a semaphore requires a p value > 0');
+    }
+    this.p = p;
+  }
+
+  async acquire() {
+    
+  }
+}
