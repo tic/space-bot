@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-shadow */
-/* eslint-disable import/prefer-default-export */
+
 export enum ChannelClassEnum {
   GENERAL = 'GENERAL',
   BOOSTER_UPDATE = 'BOOSTER_UPDATE',

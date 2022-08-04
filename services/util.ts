@@ -61,19 +61,40 @@ export const unixTimeToNotamDate = (date: number) => {
   const fullMonth = fullMonthUppercase.charAt(0) + fullMonthUppercase.slice(1).toLowerCase();
   return `${dayOfWeek}, ${fullMonth} ${dayOfMonth}${daySuffix}`;
 };
-export class Semaphore {
-  p = 0;
 
-  waiting: Promise<boolean>[] = [];
+export class Semaphore {
+  #p = 0;
+
+  // eslint-disable-next-line no-unused-vars
+  #waitingResolvers: ((_: unknown) => void)[] = [];
 
   constructor(p: number) {
     if (p < 1) {
       throw new Error('a semaphore requires a p value > 0');
     }
-    this.p = p;
+    this.#p = p;
   }
 
-  async acquire() {
-    
+  acquire(): Promise<() => void> {
+    if (this.#p === 0) {
+      return new Promise((resolve) => {
+        this.#waitingResolvers.push(resolve as () => void);
+      });
+    }
+    this.#p--;
+    const resolvingFunction = () => {
+      const waitingResolver = this.#waitingResolvers.shift();
+      if (waitingResolver) {
+        waitingResolver(resolvingFunction);
+      } else {
+        this.#p++;
+      }
+    };
+    return Promise.resolve(resolvingFunction);
   }
 }
+
+export const sleep = (ms: number) => new Promise((_resolve) => {
+  const resolve = _resolve as () => void;
+  setTimeout(() => resolve(), ms);
+});
