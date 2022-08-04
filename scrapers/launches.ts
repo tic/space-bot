@@ -1,5 +1,8 @@
 import axios from 'axios';
-import { EmbedAuthorData, MessageEmbed } from 'discord.js';
+import {
+  EmbedAuthorData,
+  MessageEmbed,
+} from 'discord.js';
 import { JSDOM } from 'jsdom';
 import { DateTime } from 'luxon';
 import { config } from '../config';
@@ -219,7 +222,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
         stopMinute,
       ).plus({
         days: stopHour < hour ? 1 : 0,
-      }).toUnixInteger();
+      }).toMillis();
       timeType = RocketLaunchTimeType.WINDOW;
     }
     if (hour === -1 || minute === -1) {
@@ -236,7 +239,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
         hour,
         minute,
         second || 0,
-      ).toUnixInteger(),
+      ).toMillis(),
       stopDate,
     };
   } catch (error) {
@@ -392,28 +395,28 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
 const formatLaunchTime = ({ time }: RocketLaunchType) => {
   const prefix = time.isNET ? 'NET' : '';
   if (time.type === RocketLaunchTimeType.APPROXIMATE) {
-    return `${prefix} Approximately <t:${time.startDate}:F>`;
+    return `${prefix} Approximately <t:${time.startDate / 1000}:F>`;
   }
   if (time.type === RocketLaunchTimeType.ESTIMATED) {
-    return `${prefix} <t:${time.startDate}:F> (estimated)`;
+    return `${prefix} <t:${time.startDate / 1000}:F> (estimated)`;
   }
   if (time.type === RocketLaunchTimeType.EXACT) {
-    return `${prefix} <t:${time.startDate}:F>`;
+    return `${prefix} <t:${time.startDate / 1000}:F>`;
   }
   if (time.type === RocketLaunchTimeType.EXACT_SECOND) {
-    return `${prefix} <t:${time.startDate}:F>`;
+    return `${prefix} <t:${time.startDate / 1000}:F>`;
   }
   if (time.type === RocketLaunchTimeType.EXACT_SECOND_WINDOW) {
-    return `${prefix} Window opens: <t:${time.startDate}:F>\nWindow closes: <t:${time.stopDate}:F>`;
+    return `${prefix} Window opens: <t:${time.startDate / 1000}:F>\nWindow closes: <t:${time.stopDate / 1000}:F>`;
   }
   if (time.type === RocketLaunchTimeType.FLEXIBLE) {
-    return `${prefix} Opportunity A: <t:${time.startDate}:F>\nOpportunity B: <t:${time.stopDate}:F>`;
+    return `${prefix} Opportunity A: <t:${time.startDate / 1000}:F>\nOpportunity B: <t:${time.stopDate / 1000}:F>`;
   }
   if (time.type === RocketLaunchTimeType.UNDECIDED) {
     return 'TBD';
   }
   if (time.type === RocketLaunchTimeType.WINDOW) {
-    return `${prefix} Window opens: <t:${time.startDate}:F>\nWindow closes: <t:${time.stopDate}:F>`;
+    return `${prefix} Window opens: <t:${time.startDate / 1000}:F>\nWindow closes: <t:${time.stopDate / 1000}:F>`;
   }
   return 'TBD';
 };
@@ -508,7 +511,7 @@ const handleChanges = async (report: ChangeReport) => {
       return;
     }
     const result = await announce(
-      ChannelClassEnum.CLOSURE_UPDATE,
+      ChannelClassEnum.LAUNCH_UPDATE,
       undefined,
       embed,
       [],

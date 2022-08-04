@@ -28,7 +28,7 @@ export type ChangeReport = {
 
 export type ScrapedDataReportType = {
   success: boolean,
-  data: any[] | null,
+  data: ScrapedDataType[] | null,
 }
 
 export type ScraperName = 'boosters' |

@@ -1,4 +1,7 @@
-import { Collection, MongoClient } from 'mongodb';
+import {
+  Collection,
+  MongoClient,
+} from 'mongodb';
 import { config } from '../config';
 import {
   ChangeItemType,

@@ -13,8 +13,10 @@ import {
   ScraperControllerType,
   ScraperName,
 } from './types/globalTypes';
+import { initialize } from './services/discord.service';
 
 client.connect();
+initialize();
 
 const keysToControllers: Record<string, ScraperControllerType> = {
   boosters: BoosterScraperController,

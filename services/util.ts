@@ -1,4 +1,8 @@
-import { fullMonths, ScraperControllerType } from '../types/globalTypes';
+import {
+  fullDays,
+  fullMonths,
+  ScraperControllerType,
+} from '../types/globalTypes';
 import { logError } from './logger.service';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
@@ -47,7 +51,7 @@ export const unixTimeToBoosterDate = (date: number) => {
 
 export const unixTimeToNotamDate = (date: number) => {
   const dateObj = new Date(date);
-  const dayOfWeek = fullMonths[dateObj.getDay()];
+  const dayOfWeek = fullDays[dateObj.getDay()];
   const dayOfMonth = dateObj.getDate();
   let daySuffix = 'th';
   if (dayOfMonth % 10 === 1 && dayOfMonth !== 11) {
@@ -57,7 +61,7 @@ export const unixTimeToNotamDate = (date: number) => {
   } else if (dayOfMonth % 10 === 3 && dayOfMonth !== 13) {
     daySuffix = 'rd';
   }
-  const fullMonthUppercase = fullMonths[dateObj.getUTCMonth() + 1];
+  const fullMonthUppercase = fullMonths[dateObj.getUTCMonth()];
   const fullMonth = fullMonthUppercase.charAt(0) + fullMonthUppercase.slice(1).toLowerCase();
   return `${dayOfWeek}, ${fullMonth} ${dayOfMonth}${daySuffix}`;
 };

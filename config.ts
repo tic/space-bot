@@ -3,6 +3,8 @@ import {
   DotenvConfigOutput,
 } from 'dotenv';
 import { GlobalConfigType } from './types/globalTypes';
+import { discordServerConfig } from './discord.config.json';
+import { DiscordServerType } from './types/serviceDiscordTypes';
 
 export const getConfig = () : GlobalConfigType => {
   console.log('[CNFIG] Loading project configuration...');
@@ -55,7 +57,7 @@ export const getConfig = () : GlobalConfigType => {
     discord: {
       secret: env('DISCORD_SECRET'),
       username: env('DISCORD_USERNAME'),
-      servers: [],
+      servers: discordServerConfig as unknown as DiscordServerType[],
     },
     mongo: {
       url: env('MONGO_URL'),

@@ -1,5 +1,9 @@
+/* eslint-disable no-unused-vars */
 import axios from 'axios';
-import { EmbedAuthorData, EmbedFooterData, MessageEmbed } from 'discord.js';
+import {
+  EmbedAuthorData,
+  MessageEmbed,
+} from 'discord.js';
 import { config } from '../config';
 import { collections } from '../services/database.service';
 import { announce } from '../services/discord.service';
@@ -60,7 +64,7 @@ const collect = async () : Promise<WeatherDataReportType> => {
       : [];
     return {
       success: true,
-      data: {
+      data: [{
         aqi: parsedResult.aqi,
         aqiScheme: parsedResult.aqiScheme,
         aqiString: parsedResult.aqiString,
@@ -93,7 +97,7 @@ const collect = async () : Promise<WeatherDataReportType> => {
         wind: parsedResult.wind,
         windDirection: parsedResult.windDirection,
         windUnits: parsedResult.windUnits,
-      },
+      }],
     } as WeatherDataReportType;
   } catch (error) {
     return {
@@ -111,6 +115,12 @@ const mergeToDatabase = async (report: WeatherDataReportType) : Promise<ChangeRe
     };
   }
   try {
+    if (report.data.length === 0) {
+      return {
+        success: true,
+        changes: [],
+      };
+    }
     const result = await collections.weather.findOneAndUpdate(
       {},
       { $set: { ...report.data } },
@@ -120,7 +130,7 @@ const mergeToDatabase = async (report: WeatherDataReportType) : Promise<ChangeRe
       success: result.lastErrorObject !== undefined,
       changes: [{
         changeType: ChangeReportTypeEnum.UPDATED,
-        data: report.data,
+        data: report.data[0],
         originalData: null,
       }],
     };
@@ -224,18 +234,22 @@ const handleChanges = async (report: ChangeReport) => {
           value: `${newData.seasonalRain} ${newData.rainUnits}`,
           inline: true,
         },
+        {
+          name: 'Data last received',
+          value: `<t:${newData.lastReceived / 1000}:F>`,
+          inline: true,
+        },
       )
-      .setTimestamp()
-      .setFooter({ text: `Data last received <t:${newData.lastReceived}:F>` } as EmbedFooterData);
-    const result = await announce(
-      ChannelClassEnum.WEATHER_UPDATE,
-      undefined,
-      embed,
-      [],
-    );
-    if (result === false) {
-      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_weather', 'failed to announce weather update');
-    }
+      .setTimestamp();
+    // const result = await announce(
+    //   ChannelClassEnum.WEATHER_UPDATE,
+    //   undefined,
+    //   embed,
+    //   [],
+    // );
+    // if (result === false) {
+    //   logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_weather', 'failed to announce weather update');
+    // }
   });
 };
 

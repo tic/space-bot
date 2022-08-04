@@ -5,14 +5,22 @@ import {
   Intents,
   MessagePayload,
   MessageOptions,
+  TextChannel,
 } from 'discord.js';
 import { config } from '../config';
 import { ChannelClassEnum } from '../types/serviceDiscordTypes';
 import { logMessage } from './logger.service';
-import { Semaphore, sleep } from './util';
+import {
+  Semaphore,
+  sleep,
+} from './util';
 
 const options: ClientOptions = {
-  intents: new Intents(32767),
+  intents: new Intents()
+    .add(Intents.FLAGS.DIRECT_MESSAGES)
+    .add(Intents.FLAGS.GUILDS)
+    .add(Intents.FLAGS.GUILD_MESSAGES)
+    .add(Intents.FLAGS.GUILD_MESSAGE_REACTIONS),
 };
 const client = new Client(options);
 
@@ -25,7 +33,7 @@ const throttleMessages = async () => {
       // eslint-disable-next-line no-await-in-loop
       const release = await queueLock.acquire();
       const messagePayload = messageQueue.shift() as MessagePayload;
-      client.user?.send(messagePayload);
+      (messagePayload.target as TextChannel).send(messagePayload);
       release();
       // eslint-disable-next-line no-await-in-loop
       await sleep(3000);
@@ -55,6 +63,7 @@ export const announce = async (
   const release = await queueLock.acquire();
   config.discord.servers.forEach((server) => {
     const destinationChannels = server.channels[channelClass];
+    console.log(channelClass, destinationChannels);
     if (!destinationChannels || destinationChannels.length === 0) {
       return;
     }
@@ -62,7 +71,11 @@ export const announce = async (
       embeds: [embed],
     } as MessageOptions;
     if (taggedRoles.length > 0 || message) {
-      messageOptions.content = ''; // TODO
+      const roleContent = taggedRoles.map((roleName) => {
+        const roleId = server.roles.find((role) => role.name === roleName)?.id;
+        return roleId ? `<@&${roleId}>` : '';
+      }).join(' ');
+      messageOptions.content = roleContent + (message || '');
     }
     destinationChannels.forEach((rawChannel) => {
       const channel = client.channels.cache.get(rawChannel.id);

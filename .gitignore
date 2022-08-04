@@ -119,3 +119,5 @@ dist
 
 testing/**
 stanford-ner/**
+
+*.config.json

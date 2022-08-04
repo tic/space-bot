@@ -21,6 +21,8 @@ export type DiscordChannelType = {
 };
 
 export type DiscordServerType = {
+  name: string,
+  id: string,
   roles: DiscordRoleType[],
   channels: Record<ChannelClassEnum, DiscordChannelType[]>,
 };

@@ -1,5 +1,8 @@
 import axios from 'axios';
-import { EmbedFieldData, MessageEmbed } from 'discord.js';
+import {
+  EmbedFieldData,
+  MessageEmbed,
+} from 'discord.js';
 import { JSDOM } from 'jsdom';
 import { DateTime } from 'luxon';
 import { config } from '../config';
@@ -16,7 +19,10 @@ import {
   ChangeReportTypeEnum,
   ScraperControllerType,
 } from '../types/globalTypes';
-import { NotamDataReportType, NotamTemplateType } from '../types/scraperNotamTypes';
+import {
+  NotamDataReportType,
+  NotamTemplateType,
+} from '../types/scraperNotamTypes';
 import { ChannelClassEnum } from '../types/serviceDiscordTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
@@ -257,11 +263,11 @@ const handleChanges = async (report: ChangeReport) => {
           },
           {
             name: 'Restriction Begins',
-            value: `<t:${newData.startDate}:F>`,
+            value: `<t:${newData.startDate / 1000}:F>`,
           },
           {
             name: 'Restriction Ends',
-            value: `<t:${newData.stopDate}:F>`,
+            value: `<t:${newData.stopDate / 1000}:F>`,
           },
         )
         .setThumbnail(newData.imageUrl)
@@ -293,14 +299,14 @@ const handleChanges = async (report: ChangeReport) => {
           {
             name: 'Restriction Begins',
             value: oldData.startDate === newData.startDate
-              ? `<t:${newData.startDate}:F>`
-              : `~~<t:${oldData.startDate}:F>~~\n<t:${newData.startDate}:F>`,
+              ? `<t:${newData.startDate / 1000}:F>`
+              : `~~<t:${oldData.startDate / 1000}:F>~~\n<t:${newData.startDate / 1000}:F>`,
           },
           {
             name: 'Restriction Ends',
             value: oldData.stopDate === newData.stopDate
-              ? `<t:${newData.stopDate}:F>`
-              : `~~<t:${oldData.stopDate}:F>~~\n<t:${newData.stopDate}:F>`,
+              ? `<t:${newData.stopDate / 1000}:F>`
+              : `~~<t:${oldData.stopDate / 1000}:F>~~\n<t:${newData.stopDate / 1000}:F>`,
           },
         )
         .setThumbnail(newData.imageUrl)
@@ -310,7 +316,7 @@ const handleChanges = async (report: ChangeReport) => {
       return;
     }
     const result = await announce(
-      ChannelClassEnum.CLOSURE_UPDATE,
+      ChannelClassEnum.NOTAM_UPDATE,
       undefined,
       embed,
       [],
@@ -346,11 +352,11 @@ const handleChanges = async (report: ChangeReport) => {
         },
         {
           name: 'Restriction Begins',
-          value: `<t:${notam.startDate}:F>`,
+          value: `<t:${notam.startDate / 1000}:F>`,
         },
         {
           name: 'Restriction Ends',
-          value: `<t:${notam.stopDate}:F>`,
+          value: `<t:${notam.stopDate / 1000}:F>`,
         },
       )
       .setThumbnail(notam.imageUrl)

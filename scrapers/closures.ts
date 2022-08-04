@@ -1,9 +1,15 @@
 import axios from 'axios';
-import { EmbedAuthorData, MessageEmbed } from 'discord.js';
+import {
+  EmbedAuthorData,
+  MessageEmbed,
+} from 'discord.js';
 import { JSDOM } from 'jsdom';
 import { DateTime } from 'luxon';
 import { config } from '../config';
-import { collections, createBulkWriteArray } from '../services/database.service';
+import {
+  collections,
+  createBulkWriteArray,
+} from '../services/database.service';
 import { announce } from '../services/discord.service';
 import { logError } from '../services/logger.service';
 import {
@@ -211,11 +217,11 @@ const handleChanges = async (report: ChangeReport) => {
           },
           {
             name: 'Closure Begins',
-            value: `<t:${newData.startDate}:F>`,
+            value: `<t:${newData.startDate / 1000}:F>`,
           },
           {
             name: 'Closure Ends',
-            value: `<t:${newData.stopDate}:F>`,
+            value: `<t:${newData.stopDate / 1000}:F>`,
           },
         )
         .setTimestamp();
@@ -244,14 +250,14 @@ const handleChanges = async (report: ChangeReport) => {
           {
             name: 'Closure Begins',
             value: oldData.startDate === newData.startDate
-              ? `<t:${newData.startDate}:F>`
-              : `~~<t:${oldData.startDate}:F>~~\n<t:${newData.startDate}:F>`,
+              ? `<t:${newData.startDate / 1000}:F>`
+              : `~~<t:${oldData.startDate / 1000}:F>~~\n<t:${newData.startDate / 1000}:F>`,
           },
           {
             name: 'Closure Ends',
             value: oldData.stopDate === newData.stopDate
-              ? `<t:${newData.stopDate}:F>`
-              : `~~<t:${oldData.stopDate}:F>~~\n<t:${newData.stopDate}:F>`,
+              ? `<t:${newData.stopDate / 1000}:F>`
+              : `~~<t:${oldData.stopDate / 1000}:F>~~\n<t:${newData.stopDate / 1000}:F>`,
           },
         )
         .setTimestamp();

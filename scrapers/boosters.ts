@@ -12,7 +12,10 @@ import {
   Falcon9Assignment,
   Falcon9BoosterType,
 } from '../types/databaseModels';
-import { ChangeReport, ScraperControllerType } from '../types/globalTypes';
+import {
+  ChangeReport,
+  ScraperControllerType,
+} from '../types/globalTypes';
 import { BoosterDataReportType } from '../types/scraperBoosterTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
