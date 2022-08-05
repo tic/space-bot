@@ -514,7 +514,7 @@ const handleChanges = async (report: ChangeReport) => {
       ChannelClassEnum.LAUNCH_UPDATE,
       undefined,
       embed,
-      [],
+      ['LAUNCH'].concat(newData.affiliations),
     );
     if (result === false) {
       logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_launches', 'failed to announce launch update');

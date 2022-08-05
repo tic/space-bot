@@ -365,7 +365,7 @@ const handleChanges = async (report: ChangeReport) => {
       ChannelClassEnum.NOTAM_UPDATE,
       undefined,
       embed,
-      [],
+      ['NOTAM'],
     );
     if (result === false) {
       logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_notams', 'failed to announce notam update');

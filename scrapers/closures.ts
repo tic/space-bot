@@ -269,7 +269,7 @@ const handleChanges = async (report: ChangeReport) => {
       ChannelClassEnum.CLOSURE_UPDATE,
       undefined,
       embed,
-      [],
+      ['CLOSURE'],
     );
     if (result === false) {
       logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_closures', 'failed to announce closures update');
