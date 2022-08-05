@@ -123,7 +123,7 @@ const mergeToDatabase = async (report: WeatherDataReportType) : Promise<ChangeRe
     }
     const result = await collections.weather.findOneAndUpdate(
       {},
-      { $set: { ...report.data } },
+      { $set: { ...report.data[0] } },
       { upsert: true },
     );
     return {
