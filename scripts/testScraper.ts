@@ -6,7 +6,7 @@ import { ScrapedDataReportType } from '../types/globalTypes';
 const { argv } = process;
 
 if (argv.length < 2) {
-  console.log('[ERROR] You must provide a scraper to test');
+  console.error('[ERROR] You must provide a scraper to test');
   process.exit(1);
 }
 
@@ -16,7 +16,7 @@ if (!folderEntries.includes('testScrapers.ts')) {
   folderEntries = readdirSync('./scrapers');
   baseLocation = './scrapers';
   if (!folderEntries.includes('testScraper.ts')) {
-    console.log(
+    console.error(
       '[ERROR] The script must be run from either the project'
       + 'root directory or from the "scripts/" directory.',
     );
@@ -26,7 +26,7 @@ if (!folderEntries.includes('testScrapers.ts')) {
 
 const scraperFile = `${argv[2]}.ts`;
 if (!folderEntries.includes(scraperFile)) {
-  console.log('[ERROR] Could not find the specified scraper (scrapers/%s)', scraperFile);
+  console.error('[ERROR] Could not find the specified scraper (scrapers/%s)', scraperFile);
   process.exit(1);
 }
 
