@@ -11,12 +11,14 @@ if (argv.length < 2) {
 }
 
 let folderEntries = readdirSync('.');
+let baseLocation = '../scrapers';
 if (!folderEntries.includes('testScrapers.ts')) {
   folderEntries = readdirSync('./scrapers');
+  baseLocation = './scrapers';
   if (!folderEntries.includes('testScraper.ts')) {
     console.log(
       '[ERROR] The script must be run from either the project'
-      + 'root directory or from the "scrapers/" directory.',
+      + 'root directory or from the "scripts/" directory.',
     );
     process.exit(1);
   }
@@ -29,7 +31,7 @@ if (!folderEntries.includes(scraperFile)) {
 }
 
 // eslint-disable-next-line import/no-dynamic-require
-const scraperController = require(`./${argv[2]}`).default;
+const scraperController = require(`${baseLocation}/${argv[2]}`).default;
 console.log('==========  EXECUTING  SCRAPER  ==========');
 scraperController.collect()
   .then((collectionResult: ScrapedDataReportType) => {
