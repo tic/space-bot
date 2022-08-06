@@ -25,8 +25,10 @@ import {
   ScraperControllerType,
 } from '../types/globalTypes';
 import {
+  closureBeachStatusToString,
   ClosureDataReportType,
   closureDateRegexp,
+  closureTypeToString,
   dateRangeRegexp,
   primaryDateRegexp,
   timeRegexp,
@@ -192,6 +194,8 @@ const handleChanges = async (report: ChangeReport) => {
   report.changes.forEach(async (changeItem) => {
     const newData = changeItem.data as RoadClosureType;
     const oldData = changeItem.originalData as RoadClosureType;
+    const statusText = closureBeachStatusToString[newData.status];
+    const typeText = closureTypeToString[oldData.type];
     let embed: MessageEmbed | null = null;
     if (changeItem.changeType === ChangeReportTypeEnum.NEW) {
       embed = new MessageEmbed()
@@ -207,12 +211,12 @@ const handleChanges = async (report: ChangeReport) => {
         .addFields(
           {
             name: 'Type',
-            value: newData.type,
+            value: typeText,
             inline: true,
           },
           {
             name: 'Status',
-            value: newData.status,
+            value: statusText,
             inline: true,
           },
           {
@@ -226,6 +230,8 @@ const handleChanges = async (report: ChangeReport) => {
         )
         .setTimestamp();
     } else if (changeItem.changeType === ChangeReportTypeEnum.UPDATED) {
+      const oldStatusText = closureBeachStatusToString[oldData.status];
+      const oldTypeText = closureTypeToString[oldData.type];
       embed = new MessageEmbed()
         .setColor('#ffff00')
         .setTitle('Road Closure Modification')
@@ -239,12 +245,12 @@ const handleChanges = async (report: ChangeReport) => {
         .addFields(
           {
             name: 'Type',
-            value: oldData.type === newData.type ? newData.type : `~~${oldData.type}~~\n${newData.type}`,
+            value: oldData.type === newData.type ? typeText : `~~${oldTypeText}~~\n${typeText}`,
             inline: true,
           },
           {
             name: 'Status',
-            value: oldData.status === newData.status ? newData.status : `~~${oldData.status}~~\n${newData.status}`,
+            value: oldData.status === newData.status ? statusText : `~~${oldStatusText}~~\n${statusText}`,
             inline: true,
           },
           {
