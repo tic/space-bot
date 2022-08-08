@@ -31,40 +31,14 @@ import {
   defaultLaunchPrototypeObject,
   getAffiliations,
   RocketLaunchDataReportType,
+  seasonToMonth,
+  quarterToMonth,
+  regexps,
+  pendingLaunchReminders,
+  launchReminderLock,
 } from '../types/scraperLaunchTypes';
 import { ChannelClassEnum } from '../types/serviceDiscordTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
-
-const seasonToMonth: Record<string, number> = {
-  SPRING: 5,
-  SUMMER: 8,
-  FALL: 11,
-  WINTER: 2,
-};
-const quarterToMonth: Record<string, number> = {
-  '1ST': 3,
-  '2ND': 6,
-  '3RD': 9,
-  '4TH': 12,
-};
-const regexps = {
-  date: {
-    abbreviatedMonthAndDay: /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Oct|Nov|Dec)\. (\d\d?)/i,
-    fullMonthAndDay: /(January|February|March|April|May|June|July|August|September|October|November|December) (\d\d?)/i,
-    month: /(January|February|March|April|May|June|July|August|September|October|November|December)/i,
-    quarter: /(1st|2nd|3rd|4th) Quarter/i,
-    season: /(Spring|Summer|Fall|Winter)/i,
-    year: /.+[ -](\d{4})/,
-  },
-  time: {
-    standardTime: /^(\d\d)(\d\d) GMT/,
-    standardTimeWithSeconds: /^(\d\d)(\d\d):(\d\d) GMT/,
-    approximateTime: /(Approx\.|Approximately) (\d\d)(\d\d)(:\d\d)? GMT/,
-    launchWindow: /(\d\d)(\d\d)-(\d\d)(\d\d) GMT/,
-    launchWindowWithSeconds: /./,
-    flexibleTime: /./,
-  },
-};
 
 const stringToTimeObject = (rawDate: string, rawTime: string) => {
   try {
@@ -253,6 +227,107 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
   }
 };
 
+const formatLaunchTime = ({ time }: RocketLaunchType) => {
+  const prefix = time.isNET ? 'NET' : '';
+  if (time.type === RocketLaunchTimeType.APPROXIMATE) {
+    return `${prefix} Approximately <t:${time.startDate / 1000}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.ESTIMATED) {
+    return `${prefix} <t:${time.startDate / 1000}:F> (estimated)`;
+  }
+  if (time.type === RocketLaunchTimeType.EXACT) {
+    return `${prefix} <t:${time.startDate / 1000}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.EXACT_SECOND) {
+    return `${prefix} <t:${time.startDate / 1000}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.EXACT_SECOND_WINDOW) {
+    return `${prefix} Window opens: <t:${time.startDate / 1000}:F>\nWindow closes: <t:${time.stopDate / 1000}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.FLEXIBLE) {
+    return `${prefix} Opportunity A: <t:${time.startDate / 1000}:F>\nOpportunity B: <t:${time.stopDate / 1000}:F>`;
+  }
+  if (time.type === RocketLaunchTimeType.UNDECIDED) {
+    return 'TBD';
+  }
+  if (time.type === RocketLaunchTimeType.WINDOW) {
+    return `${prefix} Window opens: <t:${time.startDate / 1000}:F>\nWindow closes: <t:${time.stopDate / 1000}:F>`;
+  }
+  return 'TBD';
+};
+
+const handleLaunchUpdate = async (launchData: RocketLaunchType, boosters: Falcon9BoosterType[]) => {
+  const release = await launchReminderLock.acquire();
+  try {
+    if (pendingLaunchReminders[launchData.mission]) {
+      clearTimeout(pendingLaunchReminders[launchData.mission][0]);
+      clearTimeout(pendingLaunchReminders[launchData.mission][1]);
+      delete pendingLaunchReminders[launchData.mission];
+    }
+    const timeUntilStart = launchData.time.startDate - new Date().getTime();
+    if (launchData.time.startDate && timeUntilStart > 3600000) {
+      const embeds = ['24', '3'].map((content) => new MessageEmbed()
+        .setColor('#f70062')
+        .setTitle(`${launchData.vehicle} ● ${launchData.mission}`)
+        .setURL('https://spaceflightnow.com/launch-schedule/')
+        .setAuthor({
+          name: `L-${content}h Reminder! | SpaceflightNow`,
+          iconURL: 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg',
+          url: 'https://spaceflightnow.com/',
+        })
+        .setDescription(launchData.description)
+        .addFields(
+          { name: 'Launch Time', value: formatLaunchTime(launchData), inline: true },
+          { name: 'Launch Site', value: launchData.launchSite, inline: false },
+        )
+        .setTimestamp());
+      if (boosters.length > 0) {
+        embeds.forEach((embed) => {
+          boosters.forEach((booster) => {
+            const currentAssignmentIndex = booster.assignments.findIndex(
+              (assignment) => assignment.date === unixTimeToBoosterDate(launchData.time.startDate),
+            );
+            const currentAssignment = booster.assignments[currentAssignmentIndex];
+            const details = [
+              `- Flight no. ${currentAssignmentIndex + 1}`,
+              currentAssignment.recoveryDetails.attempted
+                ? `- Landing site: ${currentAssignment.recoveryDetails.location}`
+                : '- Expendable -- no landing attempt',
+            ];
+            embed?.addField(
+              `Booster ${booster.boosterSN} ${BoosterTypeToString[booster.currentClassification]}`,
+              details.join('\n'),
+              false,
+            );
+          });
+        });
+      }
+      const timeUntilFirstReminder = timeUntilStart - 86400000;
+      const timeUntilSecondReminder = timeUntilStart - 3600000;
+      pendingLaunchReminders[launchData.mission] = [
+        timeUntilFirstReminder > 0 ? setTimeout(() => {
+          announce(
+            ChannelClassEnum.LAUNCH_REMINDER,
+            'Launch Notice',
+            embeds[0],
+            ['LAUNCH', ...launchData.affiliations],
+          );
+        }, timeUntilFirstReminder) : undefined,
+        setTimeout(() => {
+          announce(
+            ChannelClassEnum.LAUNCH_REMINDER,
+            '**Launch Alert**',
+            embeds[1],
+            ['LAUNCH', ...launchData.affiliations],
+          );
+        }, timeUntilSecondReminder),
+      ];
+    }
+  } finally {
+    release();
+  }
+};
+
 const collect = async () : Promise<RocketLaunchDataReportType> => {
   try {
     const { data: parsedResult } = await axios.get(config.scrapers.launches.url);
@@ -392,35 +467,6 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
   }
 };
 
-const formatLaunchTime = ({ time }: RocketLaunchType) => {
-  const prefix = time.isNET ? 'NET' : '';
-  if (time.type === RocketLaunchTimeType.APPROXIMATE) {
-    return `${prefix} Approximately <t:${time.startDate / 1000}:F>`;
-  }
-  if (time.type === RocketLaunchTimeType.ESTIMATED) {
-    return `${prefix} <t:${time.startDate / 1000}:F> (estimated)`;
-  }
-  if (time.type === RocketLaunchTimeType.EXACT) {
-    return `${prefix} <t:${time.startDate / 1000}:F>`;
-  }
-  if (time.type === RocketLaunchTimeType.EXACT_SECOND) {
-    return `${prefix} <t:${time.startDate / 1000}:F>`;
-  }
-  if (time.type === RocketLaunchTimeType.EXACT_SECOND_WINDOW) {
-    return `${prefix} Window opens: <t:${time.startDate / 1000}:F>\nWindow closes: <t:${time.stopDate / 1000}:F>`;
-  }
-  if (time.type === RocketLaunchTimeType.FLEXIBLE) {
-    return `${prefix} Opportunity A: <t:${time.startDate / 1000}:F>\nOpportunity B: <t:${time.stopDate / 1000}:F>`;
-  }
-  if (time.type === RocketLaunchTimeType.UNDECIDED) {
-    return 'TBD';
-  }
-  if (time.type === RocketLaunchTimeType.WINDOW) {
-    return `${prefix} Window opens: <t:${time.startDate / 1000}:F>\nWindow closes: <t:${time.stopDate / 1000}:F>`;
-  }
-  return 'TBD';
-};
-
 const handleChanges = async (report: ChangeReport) => {
   if (!report.success || !report.changes || report.changes.length === 0) {
     return;
@@ -433,6 +479,7 @@ const handleChanges = async (report: ChangeReport) => {
         assignments: { $elemMatch: { date: unixTimeToBoosterDate(newData.time.startDate) } },
       }).toArray() as Falcon9BoosterType[]
       : [];
+    handleLaunchUpdate(newData, boosters);
     let embed: MessageEmbed | null = null;
     if (changeItem.changeType === ChangeReportTypeEnum.NEW) {
       embed = new MessageEmbed()

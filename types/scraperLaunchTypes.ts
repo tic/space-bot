@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-shadow */
 
+import { Semaphore } from '../services/util';
 import {
   LaunchAffiliationType,
   RocketLaunchType,
@@ -64,3 +65,43 @@ export const getAffiliations = (description: string) : LaunchAffiliationType[] =
 export interface RocketLaunchDataReportType extends ScrapedDataReportType {
   data: RocketLaunchType[] | null,
 };
+
+export const seasonToMonth: Record<string, number> = {
+  SPRING: 5,
+  SUMMER: 8,
+  FALL: 11,
+  WINTER: 2,
+};
+
+export const quarterToMonth: Record<string, number> = {
+  '1ST': 3,
+  '2ND': 6,
+  '3RD': 9,
+  '4TH': 12,
+};
+
+export const regexps = {
+  date: {
+    abbreviatedMonthAndDay: /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Oct|Nov|Dec)\. (\d\d?)/i,
+    fullMonthAndDay: /(January|February|March|April|May|June|July|August|September|October|November|December) (\d\d?)/i,
+    month: /(January|February|March|April|May|June|July|August|September|October|November|December)/i,
+    quarter: /(1st|2nd|3rd|4th) Quarter/i,
+    season: /(Spring|Summer|Fall|Winter)/i,
+    year: /.+[ -](\d{4})/,
+  },
+  time: {
+    standardTime: /^(\d\d)(\d\d) GMT/,
+    standardTimeWithSeconds: /^(\d\d)(\d\d):(\d\d) GMT/,
+    approximateTime: /(Approx\.|Approximately) (\d\d)(\d\d)(:\d\d)? GMT/,
+    launchWindow: /(\d\d)(\d\d)-(\d\d)(\d\d) GMT/,
+    launchWindowWithSeconds: /./,
+    flexibleTime: /./,
+  },
+};
+
+export const launchReminderLock = new Semaphore(1);
+
+export const pendingLaunchReminders: Record<
+  string,
+  [ReturnType<typeof setTimeout> | undefined, ReturnType<typeof setTimeout> | undefined] | undefined
+> = {};
