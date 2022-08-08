@@ -55,6 +55,9 @@ export type GlobalConfigType = {
     url: string,
     username: string,
   },
+  web: {
+    port: number,
+  },
   scrapers: {
     boosters: {
       intervalMs: number,

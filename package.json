@@ -21,6 +21,7 @@
     "jsdom": "^20.0.0",
     "luxon": "^3.0.1",
     "mongodb": "^4.8.0",
+    "pug": "^3.0.2",
     "python-shell": "^3.0.1",
     "ts-node": "^10.8.2",
     "typescript": "^4.7.4"

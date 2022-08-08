@@ -14,6 +14,8 @@ import {
   ScraperName,
 } from './types/globalTypes';
 import { initialize } from './services/discord.service';
+import { app } from './services/webserver.service';
+import { logMessage } from './services/logger.service';
 
 client.connect();
 initialize();
@@ -32,4 +34,8 @@ Object.entries(keysToControllers).forEach(([_key, controller]) => {
     wrapScraperHandler(config.scrapers[key].identifier, controller),
     config.scrapers[key].intervalMs,
   );
+});
+
+app.listen(config.web.port, () => {
+  logMessage('service.webserver.initialize', 'Web server is listening for requests.');
 });

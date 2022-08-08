@@ -65,6 +65,9 @@ export const getConfig = () : GlobalConfigType => {
       username: env('MONGO_USERNAME'),
       password: env('MONGO_PASSWORD'),
     },
+    web: {
+      port: parseInt(env('WEB_PORT'), 10),
+    },
   };
 
   if (missingKeys.length > 0) {
