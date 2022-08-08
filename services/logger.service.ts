@@ -10,7 +10,7 @@ const getTimeString = () : string => {
     twoDigitPad(now.getMonth() + 1)
   }.${
     twoDigitPad(now.getDate())
-  }-${
+  }T${
     twoDigitPad(now.getHours())
   }:${
     twoDigitPad(now.getMinutes())

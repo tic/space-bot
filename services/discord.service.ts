@@ -63,7 +63,6 @@ export const announce = async (
   const release = await queueLock.acquire();
   config.discord.servers.forEach((server) => {
     const destinationChannels = server.channels[channelClass];
-    console.log(channelClass, destinationChannels);
     if (!destinationChannels || destinationChannels.length === 0) {
       return;
     }

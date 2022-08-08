@@ -494,9 +494,12 @@ const handleChanges = async (report: ChangeReport) => {
     }
     if (embed && boosters.length > 0) {
       boosters.forEach((booster) => {
-        const currentAssignment = booster.assignments[booster.assignments.length - 1];
+        const currentAssignmentIndex = booster.assignments.findIndex(
+          (assignment) => assignment.date === unixTimeToBoosterDate(newData.time.startDate),
+        );
+        const currentAssignment = booster.assignments[currentAssignmentIndex];
         const details = [
-          `- Flight no. ${booster.assignments.length}`,
+          `- Flight no. ${currentAssignmentIndex + 1}`,
           currentAssignment.recoveryDetails.attempted
             ? `- Landing site: ${currentAssignment.recoveryDetails.location}`
             : '- Expendable -- no landing attempt',

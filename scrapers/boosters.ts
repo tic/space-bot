@@ -16,7 +16,7 @@ import {
   ChangeReport,
   ScraperControllerType,
 } from '../types/globalTypes';
-import { BoosterDataReportType } from '../types/scraperBoosterTypes';
+import { BoosterDataReportType, StringToLandingLocation } from '../types/scraperBoosterTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 type ColumnName = 'boosterSN'
@@ -115,15 +115,22 @@ const collect = async () : Promise<BoosterDataReportType> => {
             },
             turnaroundTime: rawAssignment.turnaroundTime as string,
             recoveryDetails: {
-              attempted: rawAssignment.recoveryDetails?.indexOf('No attempt') === -1,
+              attempted:
+                rawAssignment.recoveryDetails?.indexOf('No attempt') === -1
+                && rawAssignment.recoveryDetails?.indexOf('Not yet known') === -1,
               location: null,
               status: null,
             },
           };
           if (assignment.recoveryDetails.attempted && rawAssignment.recoveryDetails) {
-            const [recoveryStatus, recoveryLocation] = rawAssignment.recoveryDetails.split(' ');
-            assignment.recoveryDetails.status = recoveryStatus;
-            assignment.recoveryDetails.location = recoveryLocation;
+            const [recoveryStatus, rawRecoveryLocation] = rawAssignment.recoveryDetails.split(' ');
+            const recoveryLocationPieces = rawRecoveryLocation.match(/\(([^()]*)\)/);
+            if (recoveryLocationPieces.length === 2) {
+              const recoveryLocation = StringToLandingLocation[recoveryLocationPieces[1]]
+                || StringToLandingLocation.UNKNOWN;
+              assignment.recoveryDetails.status = recoveryStatus;
+              assignment.recoveryDetails.location = recoveryLocation;
+            }
           }
           return assignment;
         }),
