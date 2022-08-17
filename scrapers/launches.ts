@@ -143,10 +143,10 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
         type: RocketLaunchTimeType.ESTIMATED,
         isNET: isNETDate,
         startDate: DateTime.utc(
-          2022,
+          year,
           month,
           day,
-        ).toUnixInteger(),
+        ).toMillis(),
         stopDate: null,
       };
     }
@@ -230,28 +230,40 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
 const formatLaunchTime = ({ time }: RocketLaunchType) => {
   const prefix = time.isNET ? 'NET' : '';
   if (time.type === RocketLaunchTimeType.APPROXIMATE) {
-    return `${prefix} Approximately <t:${time.startDate / 1000}:F>`;
+    return `${prefix} Approximately <t:${Math.floor(time.startDate / 1000)}:F>`;
   }
   if (time.type === RocketLaunchTimeType.ESTIMATED) {
-    return `${prefix} <t:${time.startDate / 1000}:F> (estimated)`;
+    return `${prefix} <t:${Math.floor(time.startDate / 1000)}:F> (estimated)`;
   }
   if (time.type === RocketLaunchTimeType.EXACT) {
-    return `${prefix} <t:${time.startDate / 1000}:F>`;
+    return `${prefix} <t:${Math.floor(time.startDate / 1000)}:F>`;
   }
   if (time.type === RocketLaunchTimeType.EXACT_SECOND) {
-    return `${prefix} <t:${time.startDate / 1000}:F>`;
+    return `${prefix} <t:${Math.floor(time.startDate / 1000)}:F>`;
   }
   if (time.type === RocketLaunchTimeType.EXACT_SECOND_WINDOW) {
-    return `${prefix} Window opens: <t:${time.startDate / 1000}:F>\nWindow closes: <t:${time.stopDate / 1000}:F>`;
+    return `${prefix} Window opens: <t:${
+      Math.floor(time.startDate / 1000)
+    }:F>\nWindow closes: <t:${
+      Math.floor(time.stopDate / 1000)
+    }:F>`;
   }
   if (time.type === RocketLaunchTimeType.FLEXIBLE) {
-    return `${prefix} Opportunity A: <t:${time.startDate / 1000}:F>\nOpportunity B: <t:${time.stopDate / 1000}:F>`;
+    return `${prefix} Opportunity A: <t:${
+      Math.floor(time.startDate / 1000)
+    }:F>\nOpportunity B: <t:${
+      Math.floor(time.stopDate / 1000)
+    }:F>`;
   }
   if (time.type === RocketLaunchTimeType.UNDECIDED) {
     return 'TBD';
   }
   if (time.type === RocketLaunchTimeType.WINDOW) {
-    return `${prefix} Window opens: <t:${time.startDate / 1000}:F>\nWindow closes: <t:${time.stopDate / 1000}:F>`;
+    return `${prefix} Window opens: <t:${
+      Math.floor(time.startDate / 1000)
+    }:F>\nWindow closes: <t:${
+      Math.floor(time.stopDate / 1000)
+    }:F>`;
   }
   return 'TBD';
 };
