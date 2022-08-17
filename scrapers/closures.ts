@@ -195,7 +195,7 @@ const handleChanges = async (report: ChangeReport) => {
     const newData = changeItem.data as RoadClosureType;
     const oldData = changeItem.originalData as RoadClosureType;
     const statusText = closureBeachStatusToString[newData.status];
-    const typeText = closureTypeToString[oldData.type];
+    const typeText = closureTypeToString[newData.type];
     let embed: MessageEmbed | null = null;
     if (changeItem.changeType === ChangeReportTypeEnum.NEW) {
       embed = new MessageEmbed()
