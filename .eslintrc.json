@@ -44,6 +44,8 @@
     "arrow-parens": ["error", "always"],
     "no-plusplus": "off",
     "no-continue": "off",
-    "no-underscore-dangle": "off"
+    "no-underscore-dangle": "off",
+    "max-classes-per-file": "off",
+    "lines-between-class-members": "off"
   }
 }

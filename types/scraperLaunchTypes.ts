@@ -1,7 +1,4 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-shadow */
-
-import { Semaphore } from '../services/util';
+import { ExtendedTimeout, Semaphore } from '../services/util';
 import {
   LaunchAffiliationType,
   RocketLaunchType,
@@ -103,5 +100,5 @@ export const launchReminderLock = new Semaphore(1);
 
 export const pendingLaunchReminders: Record<
   string,
-  [ReturnType<typeof setTimeout> | undefined, ReturnType<typeof setTimeout> | undefined] | undefined
+  [ExtendedTimeout | undefined, ExtendedTimeout | undefined] | undefined
 > = {};

@@ -3,7 +3,7 @@ import {
   fullMonths,
   ScraperControllerType,
 } from '../types/globalTypes';
-import { logError } from './logger.service';
+import { logError, logMessage } from './logger.service';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 export const setIntervalAndStart = (fn: () => void, intervalMs: number) => {
@@ -67,10 +67,9 @@ export const unixTimeToNotamDate = (date: number) => {
 };
 
 export class Semaphore {
-  #p = 0;
-
   // eslint-disable-next-line no-unused-vars
   #waitingResolvers: ((_: unknown) => void)[] = [];
+  #p = 0;
 
   constructor(p: number) {
     if (p < 1) {
@@ -102,3 +101,46 @@ export const sleep = (ms: number) => new Promise((_resolve) => {
   const resolve = _resolve as () => void;
   setTimeout(() => resolve(), ms);
 });
+
+export class ExtendedTimeout {
+  static #maxTimeoutMs = 2147483647;
+  #currentTimeout = null;
+  #fn = null;
+  #msRemaining = 0;
+  #identifier = 'default';
+  #active = false;
+
+  constructor(ms: number, fn: Function, id?: string) {
+    this.#active = true;
+    this.#fn = fn;
+    this.#msRemaining = ms;
+    this.#currentTimeout = setTimeout(
+      this.#migrateTimeout.bind(this),
+      ms > ExtendedTimeout.#maxTimeoutMs ? ExtendedTimeout.#maxTimeoutMs : ms,
+    );
+    if (id) {
+      this.#identifier = id;
+    }
+  }
+
+  #migrateTimeout() {
+    if (!this.#active) {
+      return;
+    }
+    this.#msRemaining -= ExtendedTimeout.#maxTimeoutMs;
+    if (this.#msRemaining > 0) {
+      this.#currentTimeout = setTimeout(
+        this.#migrateTimeout.bind(this),
+        this.#msRemaining > ExtendedTimeout.#maxTimeoutMs ? ExtendedTimeout.#maxTimeoutMs : this.#msRemaining,
+      );
+    } else {
+      this.#fn();
+      this.#currentTimeout = null;
+    }
+  }
+
+  clear() {
+    this.#active = false;
+    clearTimeout(this.#currentTimeout);
+  }
+}

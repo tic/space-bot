@@ -11,8 +11,8 @@ import {
   createBulkWriteArray,
 } from '../services/database.service';
 import { announce } from '../services/discord.service';
-import { logError } from '../services/logger.service';
-import { unixTimeToBoosterDate } from '../services/util';
+import { logError, logMessage } from '../services/logger.service';
+import { ExtendedTimeout, unixTimeToBoosterDate } from '../services/util';
 import {
   Falcon9BoosterType,
   RocketLaunchTimeType,
@@ -272,8 +272,11 @@ const handleLaunchUpdate = async (launchData: RocketLaunchType, boosters: Falcon
   const release = await launchReminderLock.acquire();
   try {
     if (pendingLaunchReminders[launchData.mission]) {
-      clearTimeout(pendingLaunchReminders[launchData.mission][0]);
-      clearTimeout(pendingLaunchReminders[launchData.mission][1]);
+      pendingLaunchReminders[launchData.mission].forEach((item) => {
+        if (item) {
+          item.clear();
+        }
+      });
       delete pendingLaunchReminders[launchData.mission];
     }
     const timeUntilStart = launchData.time.startDate - new Date().getTime();
@@ -316,25 +319,68 @@ const handleLaunchUpdate = async (launchData: RocketLaunchType, boosters: Falcon
       }
       const timeUntilFirstReminder = timeUntilStart - 86400000;
       const timeUntilSecondReminder = timeUntilStart - 3600000;
+      const timeoutIdentifier = `launch_${launchData.mission}`;
       pendingLaunchReminders[launchData.mission] = [
-        timeUntilFirstReminder > 0 ? setTimeout(() => {
-          announce(
-            ChannelClassEnum.LAUNCH_REMINDER,
-            'Launch Notice',
-            embeds[0],
-            ['LAUNCH', ...launchData.affiliations],
-          );
-        }, timeUntilFirstReminder) : undefined,
-        setTimeout(() => {
-          announce(
-            ChannelClassEnum.LAUNCH_REMINDER,
-            '**Launch Alert**',
-            embeds[1],
-            ['LAUNCH', ...launchData.affiliations],
-          );
-        }, timeUntilSecondReminder),
+        timeUntilFirstReminder > 0
+          ? new ExtendedTimeout(
+            timeUntilFirstReminder,
+            () => {
+              announce(
+                ChannelClassEnum.LAUNCH_REMINDER,
+                'Launch Notice',
+                embeds[0],
+                ['LAUNCH', ...launchData.affiliations],
+              );
+            },
+            timeoutIdentifier,
+          )
+          : undefined,
+        timeUntilSecondReminder > 0
+          ? new ExtendedTimeout(
+            timeUntilSecondReminder,
+            () => {
+              announce(
+                ChannelClassEnum.LAUNCH_REMINDER,
+                '**Launch Alert**',
+                embeds[1],
+                ['LAUNCH', ...launchData.affiliations],
+              );
+            },
+            timeoutIdentifier,
+          )
+          : undefined,
       ];
     }
+  } finally {
+    release();
+  }
+};
+
+const registerInitialLaunchTimeouts = async () => {
+  const release = await launchReminderLock.acquire();
+  try {
+    logMessage(config.scrapers.launches.identifier, 'registering existing launch timeouts');
+    const pendingReminders = await collections.launches.find(
+      {
+        'time.startDate': {
+          $gt: new Date().getTime() + 3600000,
+          $ne: 0,
+        },
+      },
+    ).toArray() as (null | RocketLaunchType[]);
+    if (Array.isArray(pendingReminders)) {
+      pendingReminders.forEach(async (launchData) => {
+        const boosters = launchData.vehicle === 'Falcon 9' || launchData.vehicle === 'Falcon Heavy'
+          ? await collections.boosters.find({
+            assignments: { $elemMatch: { date: unixTimeToBoosterDate(launchData.time.startDate) } },
+          }).toArray() as Falcon9BoosterType[]
+          : [];
+        handleLaunchUpdate(launchData, boosters);
+      });
+    }
+    logMessage(config.scrapers.launches.identifier, 'existing timeouts registered');
+  } catch (error) {
+    logError(LogCategoriesEnum.STATUS_LOG, config.scrapers.launches.identifier, String(error));
   } finally {
     release();
   }
@@ -583,6 +629,8 @@ const handleChanges = async (report: ChangeReport) => {
     }
   });
 };
+
+registerInitialLaunchTimeouts();
 
 export default {
   collect,
