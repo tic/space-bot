@@ -14,8 +14,8 @@ let folderEntries = readdirSync('.');
 let baseLocation = '../scrapers';
 if (!folderEntries.includes('testScrapers.ts')) {
   folderEntries = readdirSync('./scrapers');
-  baseLocation = './scrapers';
-  if (!folderEntries.includes('testScraper.ts')) {
+  baseLocation = '../scrapers';
+  if (!folderEntries.includes('boosters.ts')) {
     console.error(
       '[ERROR] The script must be run from either the project'
       + 'root directory or from the "scripts/" directory.',

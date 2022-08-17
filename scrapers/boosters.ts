@@ -78,6 +78,9 @@ const collect = async () : Promise<BoosterDataReportType> => {
         const columnName = columnOrder[j];
         if (allAssignments[i][columnName] === null) {
           const currentBlob = dataBlobs[blobNumber];
+          if (!currentBlob) {
+            continue;
+          }
           const affectedRowCount = parseInt(currentBlob.getAttribute('rowspan') || '1', 10);
           for (let k = 0; k < affectedRowCount; k++) {
             allAssignments[i + k][columnName] = currentBlob.textContent?.trim().replace(/\[.*\]/, '') || null;
