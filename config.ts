@@ -2,11 +2,10 @@ import {
   config as dotenvConfig,
   DotenvConfigOutput,
 } from 'dotenv';
-import { GlobalConfigType } from './types/globalTypes';
 import { discordServerConfig } from './discord.config.json';
 import { DiscordServerType } from './types/serviceDiscordTypes';
 
-export const getConfig = () : GlobalConfigType => {
+export const getConfig = () => {
   console.log('[CNFIG] Loading project configuration...');
   const { parsed: parsedEnv }: DotenvConfigOutput = dotenvConfig();
   if (parsedEnv === undefined) {
@@ -25,7 +24,7 @@ export const getConfig = () : GlobalConfigType => {
     return value;
   }
 
-  const createdConfig: GlobalConfigType = {
+  const createdConfig = {
     scrapers: {
       boosters: {
         intervalMs: parseInt(env('SCRAPER_INTERVALMS_BOOSTER'), 10),
@@ -66,6 +65,7 @@ export const getConfig = () : GlobalConfigType => {
       password: env('MONGO_PASSWORD'),
     },
     web: {
+      identifier: 'service_web',
       port: parseInt(env('WEB_PORT'), 10),
     },
   };
