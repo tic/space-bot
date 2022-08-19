@@ -70,11 +70,14 @@ export const announce = async (
       embeds: [embed],
     } as MessageOptions;
     if (taggedRoles.length > 0 || message) {
+      const messageText = message || '';
       const roleContent = taggedRoles.map((roleName) => {
         const roleId = server.roles.find((role) => role.name === roleName)?.id;
         return roleId ? `<@&${roleId}>` : '';
       }).join(' ');
-      messageOptions.content = roleContent + (message || '');
+      messageOptions.content = roleContent.length > 0
+        ? `${messageText}${messageText.length > 0 ? '\n' : roleContent}`
+        : messageText;
     }
     destinationChannels.forEach((rawChannel) => {
       const channel = client.channels.cache.get(rawChannel.id);
