@@ -1,0 +1,50 @@
+extends base
+
+block scriptBlock
+  script(src="https://cdn.jsdelivr.net/npm/luxon@1.25.0/build/global/luxon.min.js")
+  script(src="/scripts/formatter.js")
+
+block content
+  div(style="display: flex; flex-direction: column; align-items: center;")
+    h2 Upcoming TFRs
+    h5
+      | View all NOTAMS at the offical 
+      a(href="https://tfr.faa.gov/tfr2/list.jsp" target="_blank") FAA website
+      | .
+    h6 TFR dates are auto-adjusted to your timezone.
+    h6
+      div
+        span.icon(style="margin-right: 10px; color: #f0f;")
+          i.fa.fa-paper-plane
+        | Restriction which allows for a flight attempt.
+      div
+        span.icon(style="margin-right: 10px; color: #39a345;")
+          i.fa.fa-industry
+        | Indicates standard site operations restriction.
+  div(style="display: flex; flex-wrap: wrap; justify-content: center;")
+    if (notams.length == 0)
+      p.card-text No NOTAMs to show.
+    else
+      each notam in notams
+        .tfr.item
+          div(style="display: flex; justify-content: center; text-decoration: underline;")
+            if (notam.altitude == 'Unlimited')
+              span(style="margin-right: 10px; color: #f0f;")
+                i.fa.fa-paper-plane
+            span.title(style="margin-right: 5px;") NOTAM
+            a(href=notam.notamUrl target="_blank")=notam.notamId
+            | :
+          div
+            span(style="font-weight: bold;") Activates: 
+            span.start.formatTime.timeAndDateWithDay=notam.startDate
+          div
+            span(style="font-weight: bold;") Ends: 
+            span.stop.formatTime.timeAndDateWithDay=notam.stopDate
+          div
+            if (notam.altitude == -1)
+              | Altitude: Unlimited
+            else
+              | Altitude: #{notam.altitude} feet
+          div(style="margin-top: 5px; padding: 5px;")
+            if (notam.imageUrl)
+              img(src=notam.imageUrl, style="width: 100%; border-radius: 5px;")

@@ -1,4 +1,5 @@
 import express = require('express');
+import { config } from '../config';
 import {
   BeachStatusEnum,
   NotamType,
@@ -6,7 +7,9 @@ import {
   WeatherDataType,
 } from '../types/databaseModels';
 import { closureBeachStatusToString } from '../types/scraperClosureTypes';
+import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 import { collections } from './database.service';
+import { logError } from './logger.service';
 
 // eslint-disable-next-line import/prefer-default-export
 export const app = express();
@@ -38,7 +41,8 @@ app.get('/', async (req, res) => {
       closures,
       notams,
     });
-  } catch {
+  } catch (error) {
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
     res.render('today', {
       title: 'Today\'s Activities | Starbase',
       weather: {
@@ -55,20 +59,21 @@ app.get('/', async (req, res) => {
   }
 });
 
-// app.get('/notams', async (req, res) => {
-//   var notams = [];
-//   try {
-//     let notam_ids = ((
-//       await Mongo.db('notams').collection('watching').find().toArray()
-//     ) || []).map(({notam_id}) => notam_id);
-//     notams = await Mongo.db('notams').collection('tfrs').find({$or: notam_ids.map(id => ({id}))}).toArray();
-//   } catch(err) {}
-
-//   res.render('notams', {
-//     title: 'TFRs | Starbase',
-//     notams: notams ?? [],
-//   });
-// });
+app.get('/notams', async (req, res) => {
+  try {
+    const notams = await collections.notams.find({ stopDate: { $gt: new Date().getTime() } }).toArray() as NotamType[];
+    res.render('notams', {
+      title: 'TFRs | Starbase',
+      notams: notams || [],
+    });
+  } catch (error) {
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
+    res.render('notams', {
+      title: 'TFRs | Starbase',
+      notams: [],
+    });
+  }
+});
 
 // app.get('/closures', async (req, res) => {
 //   let closureDay = luxon.local().setZone('America/Chicago');

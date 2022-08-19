@@ -43,51 +43,6 @@ export type ScraperControllerType = {
   handleChanges: (arg0: ChangeReport) => void;
 };
 
-export type GlobalConfigType = {
-  discord: {
-    secret: string,
-    username: string,
-    servers: DiscordServerType[],
-  },
-  mongo: {
-    password: string,
-    primaryDatabase: string,
-    url: string,
-    username: string,
-  },
-  web: {
-    port: number,
-  },
-  scrapers: {
-    boosters: {
-      intervalMs: number,
-      identifier: string,
-      url: string,
-    },
-    closures: {
-      intervalMs: number,
-      identifier: string,
-      url: string,
-    },
-    launches: {
-      intervalMs: number,
-      identifier: string,
-      url: string,
-    },
-    notams: {
-      base: string,
-      identifier: string,
-      intervalMs: number,
-      url: string,
-    },
-    weather: {
-      intervalMs: number,
-      identifier: string,
-      url: string,
-    },
-  },
-};
-
 export const ImpossibleRegexError = new Error('Impossible regex condition');
 
 export const abbreviatedMonths = [
