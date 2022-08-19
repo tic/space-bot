@@ -1,0 +1,41 @@
+extends base
+
+block scriptBlock
+  script(src="/scripts/formatter.js")
+
+block content
+  div(style="display: flex; flex-direction: column; align-items: center;")
+    h2 Upcoming Global Space Launches
+    h5
+      | Launch data sourced from 
+      a(href="https://spaceflightnow.com" target="_blank") SpaceflightNow
+      | .
+    h6 All launch dates and times are auto-adjusted to your timezone. Only future launches are displayed.
+  div(style="display: flex; justify-content: space-around; flex-wrap: wrap")
+    div(style="max-width: 40%; min-width: 325px;")
+      h3 Scheduled launches
+      h6 These have been assigned a specific launch day and time
+      for launch in exact
+        div(style="margin: 10px; padding: 10px; border: 2px solid #0ca; border-radius: 8px;")
+          div(style="display:none;")=JSON.stringify(launch)
+          if launch.time.stopDate
+            h6.doubleLaunchHeader(style="border-bottom: 3px dashed #0ca; padding 5px;")
+              span.formatTime.timeAndDateWithDayAndSeconds=launch.time.startDate
+              span=" - "
+              span.formatTime.timeAndDateWithSeconds=launch.time.stopDate
+          else
+            h6.singleLaunchHeader.formatTime.timeAndDateWithDayAndSeconds(style="border-bottom: 3px dashed #0ca; padding: 5px;")=launch.time.startDate
+          text(style="font-weight: bold; color: #f00")=launch.vehicle + ' • ' + launch.mission
+          br
+          text(style="color: #55f; font-weight: bold;")=launch.affiliations.join(', ')
+          br
+          text(style="color: #ddd")=launch.description
+    div(style="max-width: 40%; min-width: 325px;")
+      h3 Planned launches
+      h6 These are slated to happen, but have not been formally scheduled yet. Dates shown here are estimations and may change dramatically.
+      for launch in undecided
+        div(style="margin: 10px; padding: 10px; border: 2px solid #f80; border-radius: 8px;")
+          h6.formatTime.dayAndMonth(style="border-bottom: 3px dashed #f80; padding: 5px;")=launch.time.startDate
+          text(style="font-weight: bold; color: #f00")=launch.vehicle + ' • ' + launch.mission
+          br
+          text(style="color: #55f; font-weight: bold;")=launch.affiliations.join(', ')

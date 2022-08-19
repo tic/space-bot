@@ -4,9 +4,12 @@ import {
   BeachStatusEnum,
   NotamType,
   RoadClosureType,
+  RocketLaunchTimeType,
+  RocketLaunchType,
   WeatherDataType,
 } from '../types/databaseModels';
 import { closureBeachStatusToString } from '../types/scraperClosureTypes';
+import { affiliationArray } from '../types/scraperLaunchTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 import { collections } from './database.service';
 import { logError } from './logger.service';
@@ -94,38 +97,44 @@ app.get('/notams', async (req, res) => {
 //   });
 // });
 
-// app.get('/launches', async (req, res) => {
-//   let today = luxon.local().setZone('UTC');
-//
-//   try {
-//     let exact = await Mongo.db('launches').collection('launches').find({
-//       time: {$exists: true},
-//       'time.type': { $not: { $eq: 'undecided'} },
-//       'time.start': { $gt: today.toISO() },
-//     }).sort({ 'time.start': 1 }).toArray();
+app.get('/launches', async (req, res) => {
+  try {
+    const now = new Date().getTime();
+    const exact = await collections.launches.find({
+      'time.type': { $ne: RocketLaunchTimeType.ESTIMATED },
+      'time.startDate': { $gt: now },
+    }).sort({ 'time.startDate': 1 }).toArray() as RocketLaunchType[];
 
-//     let undecided = await Mongo.db('launches').collection('launches').find({
-//       time: { $exists: true },
-//       'time.type': { $eq: "undecided" },
-//     }).sort({ _id: 1}).toArray();
+    const undecided = await collections.launches.find({
+      time: { $exists: true },
+      'time.type': RocketLaunchTimeType.ESTIMATED,
+      'time.startDate': { $gt: now },
+    }).sort({ 'time.startDate': 1 }).toArray() as RocketLaunchType[];
 
-//     var launches = {
-//       undecided,
-//       exact,
-//     };
-//   } catch (err) {
-//     var launches = {
-//       undecided: [],
-//       exact: []
-//     };
-//   }
-
-//   res.render('launches', {
-//     title: 'Upcoming Launches',
-//     undecided: launches.undecided,
-//     exact: launches.exact,
-//   });
-// });
+    res.render('launches', {
+      title: 'Upcoming Launches',
+      exact: exact.map((launchData) => ({
+        ...launchData,
+        affiliations: launchData.affiliations.map(
+          (affiliation) => affiliationArray.find((item) => item.group === affiliation).tag,
+        ),
+      })),
+      undecided: undecided.map((launchData) => ({
+        ...launchData,
+        affiliations: launchData.affiliations.map(
+          (affiliation) => affiliationArray.find((item) => item.group === affiliation).tag,
+        ),
+      })),
+    });
+  } catch (error) {
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
+    res.render('launches', {
+      title: 'Upcoming Launches',
+      undecided: [],
+      exact: [],
+    });
+  }
+});
 
 app.get('/upcheck', (_, res) => {
   res.send("Howdy, I'm still here!");

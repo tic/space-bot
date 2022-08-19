@@ -16,6 +16,15 @@ function formatDateToTimeAndDateWithDay(date) {
   }`;
 }
 
+function formatDateToDayAndMonth(date) {
+  const daysOfTheWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June', 'July',
+    'August', 'September', 'October', 'November', 'December',
+  ];
+  return `${daysOfTheWeek[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
 function formatDateToTimeAndDateWithDayAndSeconds(date) {
   const daysOfTheWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return `${daysOfTheWeek[date.getDay()]}, ${date.getMonth() + 1}/${date.getDate()}/${
@@ -41,8 +50,12 @@ for (let i = 0; i < timesToFormat.length; i++) {
   }
   if (element.classList.contains('timeOnly')) {
     element.innerHTML = formatDateToTimeOnly(date);
+  } else if (element.classList.contains('timeAndDateWithSeconds')) {
+    element.innerHTML = formatDateToTimeOnlyWithSeconds(date);
   } else if (element.classList.contains('timeAndDateWithDay')) {
     element.innerHTML = formatDateToTimeAndDateWithDay(date);
+  } else if (element.classList.contains('dayAndMonth')) {
+    element.innerHTML = formatDateToDayAndMonth(date);
   } else if (element.classList.contains('timeAndDateWithDayAndSeconds')) {
     element.innerHTML = formatDateToTimeAndDateWithDayAndSeconds(date);
   }
