@@ -3,7 +3,7 @@ import {
   fullMonths,
   ScraperControllerType,
 } from '../types/globalTypes';
-import { logError, logMessage } from './logger.service';
+import { logError } from './logger.service';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 export const setIntervalAndStart = (fn: () => void, intervalMs: number) => {
@@ -61,7 +61,7 @@ export const unixTimeToNotamDate = (date: number) => {
   } else if (dayOfMonth % 10 === 3 && dayOfMonth !== 13) {
     daySuffix = 'rd';
   }
-  const fullMonthUppercase = fullMonths[dateObj.getUTCMonth()];
+  const fullMonthUppercase = fullMonths[dateObj.getUTCMonth() + 1];
   const fullMonth = fullMonthUppercase.charAt(0) + fullMonthUppercase.slice(1).toLowerCase();
   return `${dayOfWeek}, ${fullMonth} ${dayOfMonth}${daySuffix}`;
 };
