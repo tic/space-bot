@@ -1,5 +1,5 @@
 import BoosterScraperController from './scrapers/boosters';
-import ClosureScraperController from './scrapers/closures';
+// import ClosureScraperController from './scrapers/closures';
 import LaunchScraperController from './scrapers/launches';
 import NotamScraperController from './scrapers/notams';
 import WeatherScraperController from './scrapers/weather';
@@ -22,7 +22,7 @@ initialize();
 
 const keysToControllers: Record<string, ScraperControllerType> = {
   boosters: BoosterScraperController,
-  closures: ClosureScraperController,
+  // closures: ClosureScraperController,
   launches: LaunchScraperController,
   notams: NotamScraperController,
   weather: WeatherScraperController,
