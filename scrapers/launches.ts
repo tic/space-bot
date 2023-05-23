@@ -28,7 +28,6 @@ import {
 } from '../types/globalTypes';
 import { BoosterTypeToString } from '../types/scraperBoosterTypes';
 import {
-  defaultLaunchPrototypeObject,
   getAffiliations,
   RocketLaunchDataReportType,
   seasonToMonth,
@@ -390,79 +389,75 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
   try {
     const { data: parsedResult } = await axios.get(config.scrapers.launches.url);
     const dom = new JSDOM(parsedResult);
-    const containers = dom.window.document.getElementsByClassName('entry-content clearfix');
-    if (containers.length !== 1) {
-      throw new Error('Unexpected content container count in launch scraper');
-    }
-    const dateContainers = containers[0].getElementsByClassName('datename');
-    const dataContainers = containers[0].getElementsByClassName('missiondata');
-    const descriptionContainers = containers[0].getElementsByClassName('missdescrip');
-    if (!(
-      dateContainers.length === dataContainers.length
-      && dateContainers.length === descriptionContainers.length
-    )) {
-      throw new Error('Launch component container size mismatch in launch scraper');
-    }
+    const cards = dom.window.document.getElementsByClassName('launch');
     const launches: RocketLaunchType[] = [];
-    for (let i = 0; i < dateContainers.length; i++) {
-      const dateContainer = dateContainers[i];
-      const dataContainer = dataContainers[i];
-      const descriptionContainer = descriptionContainers[i];
-      const launchPrototype = { ...defaultLaunchPrototypeObject };
-      // Date, vehicle, and mission are in dateContainer
-      const splitDate = dateContainer.getElementsByTagName('span');
-      if (splitDate.length !== 2) {
-        throw new Error(`Unexpected contents in dateContainer ${i} (${dateContainer.textContent})`);
-      }
-      launchPrototype.date = splitDate[0].textContent;
-      [launchPrototype.vehicle, launchPrototype.mission] = (splitDate[1].textContent || ' • ').split(' • ');
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i];
+      const [vehicle, mission] = card.getElementsByTagName('h5')[0].textContent.split(' | ').map((itme) => itme.trim());
+      const [datetimeRaw, launchSite] = card
+        .getElementsByClassName('mdl-card__supporting-text')[0]
+        .textContent
+        .split('\n')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
 
-      // Launch time, launch site are in dataContainer
-      const splitData = (dataContainer.textContent || '').split('\n');
-      if (splitData.length !== 2) {
-        throw new Error(`Unexpected contents in dataContainer ${i} (${dataContainer.textContent})`);
-      }
-      const rawLaunchTime = splitData[0];
-      const rawLaunchLocation = splitData[1];
-      if (
-        rawLaunchTime === null
-        || rawLaunchLocation === null
-        || !rawLaunchTime.match(/^Launch (time|window): .+$/)
-        || !rawLaunchLocation.match(/^Launch site: .+$/)
-      ) {
-        throw new Error(`Unexpected format in launch data ${i} ${dataContainer.textContent}`);
-      }
-      launchPrototype.timeData = rawLaunchTime.substring(
-        rawLaunchTime.indexOf('window') === 7 ? 15 : 13,
-      );
-      launchPrototype.launchSite = rawLaunchLocation.substring(13);
+      const splitPoint = datetimeRaw.search(/\d{4}/);
+      const rawDate = datetimeRaw.substring(0, splitPoint).replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
+      const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
+      const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
+      const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
 
-      // Affiliations, description are in the descriptionContainer
-      launchPrototype.affiliations = getAffiliations(descriptionContainer.textContent || '');
-      launchPrototype.description = descriptionContainer.textContent;
+      const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
 
-      if (!Object.values(launchPrototype).includes(null)) {
-        launches.push({
-          mission: launchPrototype.mission || '',
-          affiliations: launchPrototype.affiliations || [],
-          date: launchPrototype.date || '',
-          description: launchPrototype.description || '',
-          launchSite: launchPrototype.launchSite || '',
-          time: stringToTimeObject(launchPrototype.date || '', launchPrototype.timeData),
-          vehicle: launchPrototype.vehicle || '',
-        });
+      // eslint-disable-next-line no-await-in-loop
+      const { data: parsedDetailsResult } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
+      const detailDom = new JSDOM(parsedDetailsResult);
+
+      const sectionHeaders = detailDom.window.document.getElementsByTagName('h3');
+      let detailSection = null;
+      for (let j = 0; j < sectionHeaders.length; j++) {
+        if (sectionHeaders[j].textContent === 'Mission Details') {
+          detailSection = sectionHeaders[j].nextElementSibling;
+          break;
+        }
       }
+
+      let description = '';
+      while (detailSection && detailSection.tagName === 'SECTION') {
+        const header = detailSection.firstElementChild.firstElementChild.textContent;
+        const ps = detailSection.getElementsByTagName('p');
+        let totalStr = '';
+        for (let k = 0; k < ps.length; k++) {
+          totalStr += ps[k].textContent;
+        }
+
+        if (totalStr === '') {
+          totalStr = 'No mission description available.';
+        } else {
+          rawAffiliations.push(totalStr);
+        }
+
+        description += `**${header}**\n${totalStr}\n\n`;
+        detailSection = detailSection.nextSibling;
+      }
+
+      launches.push({
+        affiliations: getAffiliations(rawAffiliations.join(' ')),
+        date: new Date(timeObj.startDate).toISOString().split('T')[0],
+        description: description.trim(),
+        launchSite,
+        mission,
+        time: timeObj,
+        vehicle,
+      });
     }
+
     // Comment this out when working on handling new formats
-    // console.log(
-    //   launches
-    //     .filter((launch) => launch.time.type === RocketLaunchTimeType.WINDOW)
-    //     .map((launch) => [launch.mission, launch.time]),
-    // );
+    // console.log(launches);
     // return {
     //   success: true,
     //   data: [],
-    // }
+    // };
     return {
       success: true,
       data: launches,

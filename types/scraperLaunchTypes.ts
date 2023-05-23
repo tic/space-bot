@@ -79,7 +79,7 @@ export const quarterToMonth: Record<string, number> = {
 
 export const regexps = {
   date: {
-    abbreviatedMonthAndDay: /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Oct|Nov|Dec)\. (\d\d?)/i,
+    abbreviatedMonthAndDay: /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Oct|Nov|Dec)\.? (\d\d?)/i,
     fullMonthAndDay: /(January|February|March|April|May|June|July|August|September|October|November|December) (\d\d?)/i,
     month: /(January|February|March|April|May|June|July|August|September|October|November|December)/i,
     quarter: /(1st|2nd|3rd|4th) Quarter/i,
@@ -87,10 +87,10 @@ export const regexps = {
     year: /.+[ -](\d{4})/,
   },
   time: {
-    standardTime: /^(\d\d)(\d\d) GMT/,
-    standardTimeWithSeconds: /^(\d\d)(\d\d):(\d\d) GMT/,
-    approximateTime: /(Approx\.|Approximately) (\d\d)(\d\d)(:\d\d)? GMT/,
-    launchWindow: /(\d\d)(\d\d)-(\d\d)(\d\d) GMT/,
+    standardTime: /^(\d\d)(\d\d) UTC/,
+    standardTimeWithSeconds: /^(\d\d)(\d\d):(\d\d) UTC/,
+    approximateTime: /(Approx\.|Approximately) (\d\d)(\d\d)(:\d\d)? UTC/,
+    launchWindow: /(\d\d)(\d\d)-(\d\d)(\d\d) UTC/,
     launchWindowWithSeconds: /./,
     flexibleTime: /./,
   },
