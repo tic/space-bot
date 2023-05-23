@@ -73,8 +73,8 @@ export const announce = async (
       const messageText = message || '';
       const roleContent = taggedRoles.map((roleName) => {
         const roleId = server.roles.find((role) => role.name === roleName)?.id;
-        return roleId ? `<@&${roleId}>` : '';
-      }).join(' ');
+        return roleId ? `<@&${roleId}>` : roleName;
+      }).sort().join(' ');
       messageOptions.content = roleContent.length > 0
         ? `${messageText}${messageText.length > 0 ? '\n' : roleContent}`
         : messageText;

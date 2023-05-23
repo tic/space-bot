@@ -283,11 +283,9 @@ const handleLaunchUpdate = async (launchData: RocketLaunchType, boosters: Falcon
       const embeds = ['24', '3'].map((content) => new MessageEmbed()
         .setColor('#f70062')
         .setTitle(`${launchData.vehicle} ● ${launchData.mission}`)
-        .setURL('https://spaceflightnow.com/launch-schedule/')
         .setAuthor({
-          name: `L-${content}h Reminder! | SpaceflightNow`,
+          name: `L-${content}h Reminder!`,
           iconURL: 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg',
-          url: 'https://spaceflightnow.com/',
         })
         .setDescription(launchData.description)
         .addFields(
@@ -538,11 +536,9 @@ const handleChanges = async (report: ChangeReport) => {
       embed = new MessageEmbed()
         .setColor('#ff0000')
         .setTitle(`${newData.vehicle} ● ${newData.mission}`)
-        .setURL('https://spaceflightnow.com/launch-schedule/')
         .setAuthor({
-          name: 'New Launch Posted! | SpaceflightNow',
+          name: 'New Launch Posted!',
           iconUrl: 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg',
-          url: 'https://spaceflightnow.com/',
         } as EmbedAuthorData)
         .setDescription(newData.description)
         .addFields(
@@ -567,11 +563,9 @@ const handleChanges = async (report: ChangeReport) => {
       embed = new MessageEmbed()
         .setColor('#ffff00')
         .setTitle(`${newData.vehicle} ● ${newData.mission}`)
-        .setURL('https://spaceflightnow.com/launch-schedule/')
         .setAuthor({
-          name: 'Launch Update! | SpaceflightNow',
+          name: 'Launch Update!',
           iconURL: 'https://i.gyazo.com/bbfc6b20b64ac0db894f112e14a58cd5.jpg',
-          url: 'https://spaceflightnow.com/',
         } as EmbedAuthorData)
         .setDescription(newData.description)
         .addFields(
