@@ -74,7 +74,7 @@ export const createBulkWriteArray = async (
         return {
           updateOne: {
             filter: generateUpdateFilter(dbItem),
-            update: { $set: Object(dbItem) },
+            update: { $set: { ...dbItem } },
             upsert: true,
           },
         };

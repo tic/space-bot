@@ -389,6 +389,7 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
     const dom = new JSDOM(parsedResult);
     const cards = dom.window.document.getElementsByClassName('launch');
     const launches: RocketLaunchType[] = [];
+
     for (let i = 0; i < cards.length; i++) {
       const card = cards[i];
       const [vehicle, mission] = card.getElementsByTagName('h5')[0].textContent.split(' | ').map((itme) => itme.trim());
@@ -499,7 +500,7 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
       };
     }
     const result = await collections.launches.bulkWrite(bulkWriteArray);
-    if (result.upsertedCount + result.modifiedCount !== bulkWriteArray.length) {
+    if (result.nUpserted + result.nModified !== bulkWriteArray.length) {
       return {
         success: false,
         changes: null,
