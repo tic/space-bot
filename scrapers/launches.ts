@@ -281,7 +281,7 @@ const handleLaunchUpdate = async (launchData: RocketLaunchType, boosters: Falcon
     }
     const timeUntilStart = launchData.time.startDate - new Date().getTime();
     if (launchData.time.startDate && timeUntilStart > 3600000) {
-      const embeds = ['24', '3'].map((content) => new MessageEmbed()
+      const embeds = ['24', '1'].map((content) => new MessageEmbed()
         .setColor('#f70062')
         .setTitle(`${launchData.vehicle} ● ${launchData.mission}`)
         .setAuthor({
@@ -528,14 +528,17 @@ const handleChanges = async (report: ChangeReport) => {
   if (!report.success || !report.changes || report.changes.length === 0) {
     return;
   }
+
+  logMessage('scraper_launches', `processing ${report.changes.length} update(s)`);
   report.changes.forEach(async (changeItem) => {
     const newData = changeItem.data as RocketLaunchType;
-    const oldData = changeItem.data as RocketLaunchType;
+    const oldData = changeItem.originalData as RocketLaunchType;
     const boosters = newData.vehicle === 'Falcon 9' || newData.vehicle === 'Falcon Heavy'
       ? await collections.boosters.find({
         assignments: { $elemMatch: { date: unixTimeToBoosterDate(newData.time.startDate) } },
       }).toArray() as Falcon9BoosterType[]
       : [];
+
     handleLaunchUpdate(newData, boosters);
     let embed: MessageEmbed | null = null;
     if (changeItem.changeType === ChangeReportTypeEnum.NEW) {
@@ -592,6 +595,7 @@ const handleChanges = async (report: ChangeReport) => {
         )
         .setTimestamp();
     }
+
     if (embed && boosters.length > 0) {
       boosters.forEach((booster) => {
         const currentAssignmentIndex = booster.assignments.findIndex(
@@ -613,6 +617,7 @@ const handleChanges = async (report: ChangeReport) => {
     } else if (!embed) {
       return;
     }
+
     const result = await announce(
       ChannelClassEnum.LAUNCH_UPDATE,
       undefined,
