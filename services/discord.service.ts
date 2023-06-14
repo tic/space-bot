@@ -9,11 +9,13 @@ import {
 } from 'discord.js';
 import { config } from '../config';
 import { ChannelClassEnum } from '../types/serviceDiscordTypes';
-import { logMessage } from './logger.service';
+import { logError, logMessage } from './logger.service';
 import {
+  ExtendedTimeout,
   Semaphore,
   sleep,
 } from './util';
+import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 const options: ClientOptions = {
   intents: new Intents()
@@ -48,6 +50,51 @@ export const initialize = () => {
   client.on('ready', () => {
     logMessage('service.discord.initialize', `${config.discord.username} has logged in.`);
     throttleMessages();
+  });
+
+  client.on('messageCreate', (message) => {
+    if (message.content === '!sb-timeouts') {
+      const timeouts = ExtendedTimeout.getActiveTimeouts()
+        .filter((to) => to.id.startsWith('launch_'))
+        .map((to) => ({ ...to, id: to.id.substring(7) }));
+
+      let i = 1;
+      const maxI = Math.ceil(timeouts.length / 20);
+      const embeds = [];
+      while (timeouts.length > 0) {
+        embeds.push(
+          new MessageEmbed()
+            .setColor('#ffee00')
+            .setTitle(`Active Launch Timeouts (${i}/${maxI})`)
+            .addFields(
+              timeouts.splice(0, 20).map(
+                (to) => ({
+                  name: to.id,
+                  value: `<t:${Math.floor(to.trigger / 1000)}:F>`,
+                  inline: true,
+                }),
+              ),
+            )
+            .setTimestamp(),
+        );
+
+        i++;
+      }
+
+      try {
+        if (embeds.length > 0) {
+          message.channel.send({ embeds });
+        } else {
+          message.channel.send('No active timeouts!');
+        }
+      } catch (err0) {
+        try {
+          message.channel.send(`Unable to generate active timeouts report:\n${String(err0)}`);
+        } catch (err1) {
+          logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'command response', String(err1));
+        }
+      }
+    }
   });
 };
 

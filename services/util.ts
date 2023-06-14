@@ -109,6 +109,7 @@ export const sleep = (ms: number) => new Promise((_resolve) => {
 });
 
 export class ExtendedTimeout {
+  static #activeTimeouts: { id: string; trigger: number }[] = [];
   static #maxTimeoutMs = 2147483647;
   #currentTimeout = null;
   #fn = null;
@@ -120,19 +121,20 @@ export class ExtendedTimeout {
     this.#active = true;
     this.#fn = fn;
     this.#msRemaining = ms;
+    this.#identifier = id || Math.random().toString();
     this.#currentTimeout = setTimeout(
       this.#migrateTimeout.bind(this),
       ms > ExtendedTimeout.#maxTimeoutMs ? ExtendedTimeout.#maxTimeoutMs : ms,
     );
-    if (id) {
-      this.#identifier = id;
-    }
+
+    ExtendedTimeout.#activeTimeouts.push({ id: this.#identifier, trigger: Date.now() + ms });
   }
 
   #migrateTimeout() {
     if (!this.#active) {
       return;
     }
+
     this.#msRemaining -= ExtendedTimeout.#maxTimeoutMs;
     if (this.#msRemaining > 0) {
       this.#currentTimeout = setTimeout(
@@ -141,13 +143,23 @@ export class ExtendedTimeout {
       );
     } else {
       this.#fn();
-      this.#currentTimeout = null;
+      this.cleanup();
     }
   }
 
   clear() {
-    this.#active = false;
     clearTimeout(this.#currentTimeout);
+    this.cleanup();
+  }
+
+  cleanup() {
+    this.#currentTimeout = null;
+    this.#active = false;
+    ExtendedTimeout.#activeTimeouts = ExtendedTimeout.#activeTimeouts.filter((aT) => aT.id !== this.#identifier);
+  }
+
+  static getActiveTimeouts() {
+    return ExtendedTimeout.#activeTimeouts.concat([]);
   }
 }
 
