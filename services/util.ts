@@ -3,7 +3,7 @@ import {
   fullMonths,
   ScraperControllerType,
 } from '../types/globalTypes';
-import { logError } from './logger.service';
+import { logError, logMessage } from './logger.service';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 export const setIntervalAndStart = (fn: () => void, intervalMs: number) => {
@@ -17,17 +17,22 @@ export const wrapScraperHandler = (
   identifier: string,
   controller: ScraperControllerType,
 ) : () => Promise<void> => async () => {
+  logMessage(identifier, 'starting scrape');
   const dataReport = await controller.collect();
   if (dataReport.success === false) {
     logError(LogCategoriesEnum.SCRAPE_FAILURE, identifier);
     return;
   }
+
+  logMessage(identifier, 'starting merge');
   const changeReport = await controller.mergeToDatabase(dataReport);
+
   if (changeReport.success === false) {
     logError(LogCategoriesEnum.DB_MERGE_FAILURE, identifier, changeReport.message);
     return;
   }
   // The scraper controller needs to handle the change report
+  logMessage(identifier, 'handling changes');
   controller.handleChanges(changeReport);
 };
 
@@ -143,4 +148,8 @@ export class ExtendedTimeout {
     this.#active = false;
     clearTimeout(this.#currentTimeout);
   }
+}
+
+export function orderJSON(json: Record<string, unknown>) {
+  return Object.fromEntries(Object.entries(json).sort((a, b) => a[0].localeCompare(b[0])));
 }

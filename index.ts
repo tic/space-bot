@@ -2,7 +2,7 @@ import BoosterScraperController from './scrapers/boosters';
 // import ClosureScraperController from './scrapers/closures';
 import LaunchScraperController from './scrapers/launches';
 import NotamScraperController from './scrapers/notams';
-import WeatherScraperController from './scrapers/weather';
+// import WeatherScraperController from './scrapers/weather';
 import { config } from './config';
 import { client } from './services/database.service';
 import {
@@ -25,7 +25,7 @@ const keysToControllers: Record<string, ScraperControllerType> = {
   // closures: ClosureScraperController,
   launches: LaunchScraperController,
   notams: NotamScraperController,
-  weather: WeatherScraperController,
+  // weather: WeatherScraperController,
 };
 
 Object.entries(keysToControllers).forEach(([_key, controller]) => {

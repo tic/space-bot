@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 import axios from 'axios';
 import {
   EmbedAuthorData,
@@ -408,7 +409,7 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
 
       const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
 
-      // eslint-disable-next-line no-await-in-loop
+      logMessage('scraper_launches', `running subrequest for mission ${mission}`);
       const { data: parsedDetailsResult } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
       const detailDom = new JSDOM(parsedDetailsResult);
 
@@ -484,6 +485,7 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
         changes: [],
       };
     }
+
     const { bulkWriteArray, changeItems } = await createBulkWriteArray(
       collections.launches,
       { $or: report.data.map((launchData) => ({ mission: launchData.mission })) },
@@ -493,12 +495,14 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
       ) => currentDbItem.mission === testDbItem.mission,
       (dbItem: RocketLaunchType) => ({ mission: dbItem.mission }),
     );
+
     if (bulkWriteArray.length === 0) {
       return {
         success: true,
         changes: [],
       };
     }
+
     const result = await collections.launches.bulkWrite(bulkWriteArray);
     if (result.nUpserted + result.nModified !== bulkWriteArray.length) {
       return {
@@ -506,6 +510,7 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
         changes: null,
       };
     }
+
     return {
       success: true,
       changes: changeItems,

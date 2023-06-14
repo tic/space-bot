@@ -11,6 +11,7 @@ import {
 } from '../types/globalTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 import { logError } from './logger.service';
+import { orderJSON } from './util';
 
 export const client = new MongoClient(
   `mongodb+srv://${
@@ -51,6 +52,7 @@ export const createBulkWriteArray = async (
         changeItems: [],
       };
     }
+
     const matchingObjectsInDbWithId = await collection.find(findClause).toArray();
     const matchingObjectsInDbWithoutId = matchingObjectsInDbWithId.map((dbItem) => {
       const returnObj: Record<string, any> = {};
@@ -61,26 +63,30 @@ export const createBulkWriteArray = async (
       });
       return returnObj;
     });
+
     const changeItems: ChangeItemType[] = [];
     const bulkWriteArray = data.map((dbItem) => {
-      const existingItem = matchingObjectsInDbWithoutId.find(matchFunction(dbItem));
+      const orderedDbItem = orderJSON(dbItem);
+      const existingItem = matchingObjectsInDbWithoutId.find(matchFunction(orderedDbItem));
+      const orderedExistingItem = orderJSON(existingItem || {});
       const changeType = existingItem ? ChangeReportTypeEnum.UPDATED : ChangeReportTypeEnum.NEW;
-      if (!existingItem || JSON.stringify(existingItem) !== JSON.stringify(dbItem)) {
+      if (!existingItem || JSON.stringify(orderedExistingItem) !== JSON.stringify(orderedDbItem)) {
         changeItems.push({
           changeType,
-          data: dbItem,
-          originalData: existingItem as ScrapedDataType,
+          data: orderedDbItem,
+          originalData: orderedExistingItem as ScrapedDataType,
         });
         return {
           updateOne: {
-            filter: generateUpdateFilter(dbItem),
-            update: { $set: { ...dbItem } },
+            filter: generateUpdateFilter(orderedDbItem),
+            update: { $set: { ...orderedDbItem } },
             upsert: true,
           },
         };
       }
       return null;
     });
+
     type ArrayItemReturnType = {
       updateOne: {
         filter: Object,
@@ -88,6 +94,7 @@ export const createBulkWriteArray = async (
         upsert: boolean,
       },
     };
+
     return {
       bulkWriteArray: bulkWriteArray.filter((arrayItem) => arrayItem !== null) as ArrayItemReturnType[],
       changeItems,
