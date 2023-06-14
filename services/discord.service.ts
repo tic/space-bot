@@ -56,7 +56,8 @@ export const initialize = () => {
     if (message.content === '!sb-timeouts') {
       const timeouts = ExtendedTimeout.getActiveTimeouts()
         .filter((to) => to.id.startsWith('launch_'))
-        .map((to) => ({ ...to, id: to.id.substring(7) }));
+        .map((to) => ({ ...to, id: to.id.substring(7) }))
+        .sort((a, b) => a.trigger - b.trigger);
 
       let i = 1;
       const maxI = Math.ceil(timeouts.length / 20);
