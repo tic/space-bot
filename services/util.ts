@@ -34,6 +34,7 @@ export const wrapScraperHandler = (
   // The scraper controller needs to handle the change report
   logMessage(identifier, 'handling changes');
   controller.handleChanges(changeReport);
+  logMessage(identifier, 'done!');
 };
 
 export const unixTimeToHoursAndMinutes = (date: number) => {
