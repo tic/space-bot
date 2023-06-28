@@ -207,7 +207,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       type: timeType,
       isNET: isNETDate,
       startDate: DateTime.utc(
-        2022,
+        year,
         month,
         day,
         hour,
