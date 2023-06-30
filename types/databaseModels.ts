@@ -123,6 +123,7 @@ export interface RocketLaunchType extends ScrapedDataType {
     isNET: boolean,
     startDate: number,
     stopDate: number | null,
+    sortDate: number,
   },
   vehicle: string,
 };

@@ -64,17 +64,17 @@ export interface RocketLaunchDataReportType extends ScrapedDataReportType {
 };
 
 export const seasonToMonth: Record<string, number> = {
-  SPRING: 5,
-  SUMMER: 8,
-  FALL: 11,
-  WINTER: 2,
+  SPRING: 2,
+  SUMMER: 5,
+  FALL: 8,
+  WINTER: 11,
 };
 
 export const quarterToMonth: Record<string, number> = {
-  '1ST': 3,
-  '2ND': 6,
-  '3RD': 9,
-  '4TH': 12,
+  '1ST': 0,
+  '2ND': 3,
+  '3RD': 6,
+  '4TH': 9,
 };
 
 export const regexps = {

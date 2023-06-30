@@ -57,18 +57,26 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
         isNET: false,
         startDate: 0,
         stopDate: null,
+        sortDate: 0,
       };
     }
+
     const isNETDate = rawDate.indexOf('NET') > -1;
     let timeType = RocketLaunchTimeType.UNKNOWN;
     let year = currentYear;
     let day = -1;
     let month = -1;
+
+    let sortYear = currentYear;
+    let sortDay = -1;
+    let sortMonth = -1;
+
     if (rawDate.match(regexps.date.abbreviatedMonthAndDay)) {
       const result = rawDate.match(regexps.date.abbreviatedMonthAndDay);
       if (!result || result.length < 3) {
         throw ImpossibleRegexError;
       }
+
       month = abbreviatedMonths.indexOf(result[1].toUpperCase());
       day = parseInt(result[2], 10);
       timeType = RocketLaunchTimeType.ESTIMATED;
@@ -77,6 +85,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 3) {
         throw ImpossibleRegexError;
       }
+
       month = fullMonths.indexOf(result[1].toUpperCase());
       day = parseInt(result[2], 10);
       timeType = RocketLaunchTimeType.ESTIMATED;
@@ -85,53 +94,85 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
+
       month = fullMonths.indexOf(result[1].toUpperCase());
+      sortMonth = month;
       if (month < currentMonth) {
         year++;
+        sortYear++;
       }
-      day = DateTime.utc(year, month, 1).plus({
+
+      day = 1;
+
+      // Get the last day of the month
+      ({ day: sortDay } = DateTime.utc(year, month, 1).plus({
         day: -1,
         month: 1,
-      }).day; // Get the last day of the month
+      }));
+
       timeType = RocketLaunchTimeType.ESTIMATED;
     } else if (rawDate.match(regexps.date.season)) {
       const result = rawDate.match(regexps.date.season);
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
+
       month = seasonToMonth[result[1].toUpperCase()];
+      sortMonth = month;
       if (month < currentMonth) {
         year++;
+        sortYear++;
       }
-      day = DateTime.utc(year, month, 1).plus({
+
+      day = 1;
+
+      // Get the last day of the month
+      ({ day: sortDay } = DateTime.utc(year, month, 1).plus({
         day: -1,
         month: 1,
-      }).day; // Get the last day of the month
+      }));
+
       timeType = RocketLaunchTimeType.ESTIMATED;
     } else if (rawDate.match(regexps.date.quarter)) {
       const result = rawDate.match(regexps.date.quarter);
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
+
       month = quarterToMonth[result[1].toUpperCase()];
+      sortMonth = month;
       if (month < currentMonth) {
         year++;
+        sortYear++;
       }
-      day = DateTime.utc(year, month, 1).plus({
+
+      day = 1;
+
+      // Get the last day of the month
+      ({ day: sortDay } = DateTime.utc(year, month, 1).plus({
         day: -1,
         month: 1,
-      }).day; // Get the last day of the month
+      }));
+
       timeType = RocketLaunchTimeType.ESTIMATED;
     } else if (rawDate.match(regexps.date.year)) {
       const result = rawDate.match(regexps.date.year);
       if (!result || result.length < 2) {
         throw ImpossibleRegexError;
       }
+
       year = parseInt(result[1], 10);
+      sortYear = year;
+
+      sortMonth = 1;
       month = 12;
+
+      sortDay = 1;
       day = 31;
+
       timeType = RocketLaunchTimeType.ESTIMATED;
     }
+
     if (day === -1 || month === -1) {
       throw new Error(`Failed to parse day/month from date: ${rawDate}, ${rawTime}`);
     }
@@ -139,26 +180,42 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
     // Step 2: Get a specific time or window to work with
     const isTimed = rawTime.indexOf('TBD') === -1;
     if (!isTimed) {
+      const datetime = DateTime.utc(
+        year,
+        month,
+        day,
+        12,
+        0,
+        0,
+      ).toMillis();
+
       return {
         type: RocketLaunchTimeType.ESTIMATED,
         isNET: isNETDate,
-        startDate: DateTime.utc(
-          year,
-          month,
-          day,
-        ).toMillis(),
+        startDate: datetime,
         stopDate: null,
+        sortDate: sortDay === -1 ? datetime : DateTime.utc(
+          sortYear,
+          sortMonth,
+          sortDay,
+          23,
+          59,
+          59,
+        ).toMillis(),
       };
     }
+
     let hour = -1;
     let minute = -1;
     let second: number | null = null;
     let stopDate: number | null = null;
+
     if (rawTime.match(regexps.time.standardTime)) {
       const result = rawTime.match(regexps.time.standardTime);
       if (!result || result.length < 3) {
         throw ImpossibleRegexError;
       }
+
       hour = parseInt(result[1], 10);
       minute = parseInt(result[2], 10);
       timeType = RocketLaunchTimeType.EXACT;
@@ -167,6 +224,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 4) {
         throw ImpossibleRegexError;
       }
+
       hour = parseInt(result[1], 10);
       minute = parseInt(result[2], 10);
       second = parseInt(result[3], 10);
@@ -175,6 +233,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 4) {
         throw ImpossibleRegexError;
       }
+
       hour = parseInt(result[2], 10);
       minute = parseInt(result[3], 10);
       second = result[4] ? parseInt(result[3], 10) : null;
@@ -184,6 +243,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       if (!result || result.length < 5) {
         throw ImpossibleRegexError;
       }
+
       hour = parseInt(result[1], 10);
       minute = parseInt(result[2], 10);
       const stopHour = parseInt(result[3], 10);
@@ -197,24 +257,39 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       ).plus({
         days: stopHour < hour ? 1 : 0,
       }).toMillis();
+
       timeType = RocketLaunchTimeType.WINDOW;
     }
     if (hour === -1 || minute === -1) {
       throw new Error(`Failed to parse minute/second from date: ${rawDate}, ${rawTime}`);
     }
 
+    const finalStartDate = DateTime.utc(
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second || 0,
+    ).toMillis();
+
+    // Some estimates provide a different date to sort by. If that's the
+    // case, use the sort date instead of the start date.
+    const finalSortDate = sortDay === -1 ? finalStartDate : DateTime.utc(
+      sortYear,
+      sortMonth,
+      sortDay,
+      23,
+      59,
+      59,
+    ).toMillis();
+
     return {
       type: timeType,
       isNET: isNETDate,
-      startDate: DateTime.utc(
-        year,
-        month,
-        day,
-        hour,
-        minute,
-        second || 0,
-      ).toMillis(),
+      startDate: finalStartDate,
       stopDate,
+      sortDate: finalSortDate,
     };
   } catch (error) {
     console.error(error);
@@ -223,6 +298,7 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       isNET: false,
       startDate: 0,
       stopDate: null,
+      sortDate: 0,
     };
   }
 };
@@ -232,15 +308,19 @@ const formatLaunchTime = ({ time }: RocketLaunchType) => {
   if (time.type === RocketLaunchTimeType.APPROXIMATE) {
     return `${prefix} Approximately <t:${Math.floor(time.startDate / 1000)}:F>`;
   }
+
   if (time.type === RocketLaunchTimeType.ESTIMATED) {
-    return `${prefix} <t:${Math.floor(time.startDate / 1000)}:F> (estimated)`;
+    return `${prefix} <t:${Math.floor(time.startDate / 1000)}:D> (estimated)`;
   }
+
   if (time.type === RocketLaunchTimeType.EXACT) {
     return `${prefix} <t:${Math.floor(time.startDate / 1000)}:F>`;
   }
+
   if (time.type === RocketLaunchTimeType.EXACT_SECOND) {
     return `${prefix} <t:${Math.floor(time.startDate / 1000)}:F>`;
   }
+
   if (time.type === RocketLaunchTimeType.EXACT_SECOND_WINDOW) {
     return `${prefix} Window opens: <t:${
       Math.floor(time.startDate / 1000)
@@ -248,6 +328,7 @@ const formatLaunchTime = ({ time }: RocketLaunchType) => {
       Math.floor(time.stopDate / 1000)
     }:F>`;
   }
+
   if (time.type === RocketLaunchTimeType.FLEXIBLE) {
     return `${prefix} Opportunity A: <t:${
       Math.floor(time.startDate / 1000)
@@ -255,9 +336,11 @@ const formatLaunchTime = ({ time }: RocketLaunchType) => {
       Math.floor(time.stopDate / 1000)
     }:F>`;
   }
+
   if (time.type === RocketLaunchTimeType.UNDECIDED) {
     return 'TBD';
   }
+
   if (time.type === RocketLaunchTimeType.WINDOW) {
     return `${prefix} Window opens: <t:${
       Math.floor(time.startDate / 1000)
@@ -265,6 +348,7 @@ const formatLaunchTime = ({ time }: RocketLaunchType) => {
       Math.floor(time.stopDate / 1000)
     }:F>`;
   }
+
   return 'TBD';
 };
 
@@ -277,10 +361,16 @@ const handleLaunchUpdate = async (launchData: RocketLaunchType, boosters: Falcon
           item.clear();
         }
       });
+
       delete pendingLaunchReminders[launchData.mission];
     }
+
     const timeUntilStart = launchData.time.startDate - new Date().getTime();
-    if (launchData.time.startDate && timeUntilStart > 3600000) {
+    if (
+      launchData.time.type !== RocketLaunchTimeType.ESTIMATED
+      && launchData.time.startDate
+      && timeUntilStart > 3600000
+    ) {
       const embeds = ['24', '1'].map((content) => new MessageEmbed()
         .setColor('#f70062')
         .setTitle(`${launchData.vehicle} ● ${launchData.mission}`)
@@ -300,6 +390,7 @@ const handleLaunchUpdate = async (launchData: RocketLaunchType, boosters: Falcon
             const currentAssignmentIndex = booster.assignments.findIndex(
               (assignment) => assignment.date === unixTimeToBoosterDate(launchData.time.startDate),
             );
+
             const currentAssignment = booster.assignments[currentAssignmentIndex];
             const details = [
               `- Flight no. ${currentAssignmentIndex + 1}`,
@@ -307,6 +398,7 @@ const handleLaunchUpdate = async (launchData: RocketLaunchType, boosters: Falcon
                 ? `- Landing site: ${currentAssignment.recoveryDetails.location}`
                 : '- Expendable -- no landing attempt',
             ];
+
             embed?.addField(
               `Booster ${booster.boosterSN} ${BoosterTypeToString[booster.currentClassification]}`,
               details.join('\n'),
@@ -315,6 +407,7 @@ const handleLaunchUpdate = async (launchData: RocketLaunchType, boosters: Falcon
           });
         });
       }
+
       const timeUntilFirstReminder = timeUntilStart - 86400000;
       const timeUntilSecondReminder = timeUntilStart - 3600000;
       const timeoutIdentifier = `launch_${launchData.mission}`;
@@ -360,6 +453,7 @@ const registerInitialLaunchTimeouts = async () => {
     logMessage(config.scrapers.launches.identifier, 'registering existing launch timeouts');
     const pendingReminders = await collections.launches.find(
       {
+        'time.timeType': { $ne: RocketLaunchTimeType.ESTIMATED },
         'time.startDate': {
           $gt: new Date().getTime() + 3600000,
           $ne: 0,
@@ -405,6 +499,7 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
       const rawDate = datetimeRaw.substring(0, splitPoint).replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
       const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
       const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
+      console.log(vehicle, mission);
       const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
 
       const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
@@ -530,7 +625,7 @@ const handleChanges = async (report: ChangeReport) => {
   }
 
   logMessage('scraper_launches', `processing ${report.changes.length} update(s)`);
-  report.changes.forEach(async (changeItem) => {
+  await Promise.all(report.changes.map(async (changeItem) => {
     const newData = changeItem.data as RocketLaunchType;
     const oldData = changeItem.originalData as RocketLaunchType;
     const boosters = newData.vehicle === 'Falcon 9' || newData.vehicle === 'Falcon Heavy'
@@ -541,6 +636,7 @@ const handleChanges = async (report: ChangeReport) => {
 
     handleLaunchUpdate(newData, boosters);
     let embed: MessageEmbed | null = null;
+
     if (changeItem.changeType === ChangeReportTypeEnum.NEW) {
       embed = new MessageEmbed()
         .setColor('#ff0000')
@@ -569,6 +665,7 @@ const handleChanges = async (report: ChangeReport) => {
       if (oldTimeDisplay === newTimeDisplay) {
         return;
       }
+
       embed = new MessageEmbed()
         .setColor('#ffff00')
         .setTitle(`${newData.vehicle} ● ${newData.mission}`)
@@ -627,7 +724,7 @@ const handleChanges = async (report: ChangeReport) => {
     if (result === false) {
       logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_launches', 'failed to announce launch update');
     }
-  });
+  }));
 };
 
 registerInitialLaunchTimeouts();
