@@ -488,6 +488,10 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
     for (let i = 0; i < cards.length; i++) {
       const card = cards[i];
       const [vehicle, mission] = card.getElementsByTagName('h5')[0].textContent.split(' | ').map((itme) => itme.trim());
+      if (mission.match(/unknown payload/i)) {
+        continue;
+      }
+
       const [datetimeRaw, launchSite] = card
         .getElementsByClassName('mdl-card__supporting-text')[0]
         .textContent
@@ -499,7 +503,6 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
       const rawDate = datetimeRaw.substring(0, splitPoint).replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
       const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
       const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
-      console.log(vehicle, mission);
       const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
 
       const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
