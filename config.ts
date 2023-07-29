@@ -67,6 +67,7 @@ export const getConfig = () => {
     web: {
       identifier: 'service_web',
       port: parseInt(env('WEB_PORT'), 10),
+      devMode: env('WEB_DEV_MODE') === 'true',
     },
   };
 

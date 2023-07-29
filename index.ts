@@ -18,7 +18,10 @@ import { app } from './services/webserver.service';
 import { logMessage } from './services/logger.service';
 
 client.connect();
-initialize();
+
+if (!config.web.devMode) {
+  initialize();
+}
 
 const keysToControllers: Record<string, ScraperControllerType> = {
   boosters: BoosterScraperController,
@@ -30,10 +33,12 @@ const keysToControllers: Record<string, ScraperControllerType> = {
 
 Object.entries(keysToControllers).forEach(([_key, controller]) => {
   const key = _key as ScraperName;
-  setIntervalAndStart(
-    wrapScraperHandler(config.scrapers[key].identifier, controller),
-    config.scrapers[key].intervalMs,
-  );
+  if (!config.web.devMode) {
+    setIntervalAndStart(
+      wrapScraperHandler(config.scrapers[key].identifier, controller),
+      config.scrapers[key].intervalMs,
+    );
+  }
 });
 
 app.listen(config.web.port, () => {

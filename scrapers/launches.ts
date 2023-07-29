@@ -730,7 +730,9 @@ const handleChanges = async (report: ChangeReport) => {
   }));
 };
 
-registerInitialLaunchTimeouts();
+if (!config.web.devMode) {
+  registerInitialLaunchTimeouts();
+}
 
 export default {
   collect,
