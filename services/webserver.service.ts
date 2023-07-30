@@ -20,6 +20,44 @@ app.use(express.static(`${__dirname}/../web/static`));
 app.set('views', `${__dirname}/../web/views`);
 app.set('view engine', 'pug');
 
+app.get('/calendar-data', async (req, res) => {
+  try {
+    const rangeStart = new Date();
+    rangeStart.setHours(0);
+    rangeStart.setMinutes(0);
+    rangeStart.setSeconds(0);
+    rangeStart.setMilliseconds(0);
+    rangeStart.setDate(-5);
+
+    const rangeEnd = new Date();
+    rangeEnd.setDate(14);
+    rangeEnd.setHours(23);
+    rangeEnd.setMinutes(59);
+    rangeEnd.setSeconds(59);
+    rangeEnd.setMilliseconds(999);
+    rangeEnd.setMonth(rangeEnd.getMonth() + 1);
+
+    const launchData = await collections.launches.find(
+      { 'time.sortDate': { $gte: rangeStart.getTime(), $lte: rangeEnd.getTime() } },
+      { sort: { 'time.sortDate': 1 } },
+    ).toArray();
+
+    res.json({ success: true, launches: launchData });
+  } catch (error) {
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
+    res.json({ success: false });
+  }
+});
+
+app.get('/calendar', async (req, res) => {
+  try {
+    res.render('calendar', { hideDiscord: true });
+  } catch (error) {
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
+    res.render('calendar', {});
+  }
+});
+
 app.get('/', async (req, res) => {
   const now = new Date();
   const closureDay = `${now.getMonth() + 1}\\.${now.getDate()}\\.${now.getFullYear()}`;

@@ -1,0 +1,134 @@
+extends base
+
+block customHead
+  style.
+    .calendarHeader {
+      height: 35px;
+      text-align: center;
+      background-color: none;
+    }
+
+    .calendarCell {
+      width: 100%;
+      height: 100%;
+      min-height: 75px;
+      border: 2px solid white;
+      overflow-y: hidden;
+
+      .dayOfMonth {
+        margin-left: 5px;
+        padding-right: 0px;
+        border-bottom: 1px solid white;
+      }
+    }
+
+    .calendarContainer {
+      display: grid;
+      grid-template-columns: auto auto auto auto auto auto auto;
+
+      .inactiveMonth {
+        //- background-color: #3f3f3f;
+      }
+
+      .activeMonth {
+        background-color: #707070;
+      }
+
+      .expiredDay {
+        background-color: #3f3f3f;
+      }
+
+      .activeDay {
+        .dayOfMonth {
+          color: red;
+          font-weight: 900;
+          border-color: red;
+        }
+      }
+    }
+
+    .launchCard {
+      //- border: 1px solid green;
+      padding: 10px 0 10px 5px;
+
+      .title {
+        color: red;
+      }
+    }
+
+    .calendarEvent {
+      display: flex;
+      flex-direction: row;
+      height: 19px;
+      width: 100%;
+      font-size: 11px;
+      font-weight: 400;
+      width: 100%;
+      user-select: none;
+
+      .time {
+        margin: 2px 0 2px 5px;
+        padding: 0 1px 0 1px;
+        width: 33px;
+        font-weight: 400;
+        background-color: red;
+        text-align: center;
+      }
+
+      .time.net {
+        background-color: black;
+      }
+
+      .title {
+        margin: 2px 5px 2px 0px;
+        width: calc(100% - 40px);
+        padding: 0 7px 0 5px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        border-radius: 0px 15px 15px 0;
+        background-color: blue;
+      }
+    }
+
+block content
+  div(style="position: absolute; bottom: 25px;")
+    small#lastUpdated
+  div(style="display: flex; flex-direction: row; width: 100%; height: calc(100vh - 125px);")
+    div(style="width: 30%; margin: 0 15px 0 0;")
+      div(style="padding: 0 0 25px 0; margin: 0 0 25px 0; border-bottom: 4px solid white;")
+        h2 Events in the next 24 hours
+        div#primaryEvents
+      div
+        h2 Today's Events
+        div#secondaryEvents
+    
+    div(style="width: 70%;")
+      div
+        h2 Event Calendar
+        div.calendarContainer
+          div.calendarHeader
+            h4 Sun
+          div.calendarHeader
+            h4 Mon
+          div.calendarHeader
+            h4 Tue
+          div.calendarHeader
+            h4 Wed
+          div.calendarHeader
+            h4 Thu
+          div.calendarHeader
+            h4 Fri
+          div.calendarHeader
+            h4 Sat
+        div.calendarContainer#launchCalendar(style="border: 1px solid white;")
+          - var n = 0;
+          while n < 42
+            div(key=n++).calendarCell
+              span.dayOfMonth
+              div.scheduleArea
+      //- div
+      //-   h2 Recent updates
+
+block scriptBlock
+  script(src="/scripts/calendar.js")
