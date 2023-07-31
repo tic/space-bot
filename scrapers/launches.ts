@@ -515,7 +515,25 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
           .filter((item) => item.length > 0);
 
         const splitPoint = datetimeRaw.search(/\d{4}/);
-        const rawDate = datetimeRaw.substring(0, splitPoint).replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
+        let rawDate = datetimeRaw
+          .substring(0, splitPoint)
+          .replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
+
+        if (!rawDate.match(regexps.date.month)) {
+          rawDate = rawDate
+            .replace(/Jan/, 'January')
+            .replace(/Feb/, 'February')
+            .replace(/Mar/, 'March')
+            .replace(/Apr/, 'April')
+            .replace(/Jun/, 'June')
+            .replace(/Jul/, 'July')
+            .replace(/Aug/, 'August')
+            .replace(/Sep/, 'September')
+            .replace(/Oct/, 'October')
+            .replace(/Nov/, 'November')
+            .replace(/Dec/, 'December ');
+        }
+
         const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
         const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
         const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
