@@ -488,7 +488,6 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
       const { data: parsedResult } = await axios.get(`${config.scrapers.launches.url}?page=${page++}`);
       const dom = new JSDOM(parsedResult);
       const cards = dom.window.document.getElementsByClassName('launch');
-      isLastPage = true;
       if (cards.length < 30 || page > 6) {
         isLastPage = true;
       }
