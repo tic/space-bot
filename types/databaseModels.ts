@@ -113,6 +113,7 @@ export enum LaunchAffiliationType {
 };
 
 export interface RocketLaunchType extends ScrapedDataType {
+  launchId: string;
   affiliations: LaunchAffiliationType[],
   date: string,
   description: string,

@@ -488,12 +488,16 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
       const { data: parsedResult } = await axios.get(`${config.scrapers.launches.url}?page=${page++}`);
       const dom = new JSDOM(parsedResult);
       const cards = dom.window.document.getElementsByClassName('launch');
+      isLastPage = true;
       if (cards.length < 30 || page > 6) {
         isLastPage = true;
       }
 
       for (let i = 0; i < cards.length; i++) {
         const card = cards[i];
+        const launchId = Array.from(card.classList)
+          .find((className) => className.match(/a\d+/)) || null;
+
         const [vehicle, mission] = card
           .getElementsByTagName('h5')[0]
           .textContent.split(' | ')
@@ -518,7 +522,7 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
 
         const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
 
-        logMessage('scraper_launches', `running subrequest for mission ${mission}`);
+        logMessage('scraper_launches', `running subrequest for launch ${launchId} (mission ${mission})`);
         const { data: parsedDetailsResult } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
         const detailDom = new JSDOM(parsedDetailsResult);
 
@@ -551,6 +555,7 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
         }
 
         launches.push({
+          launchId,
           affiliations: getAffiliations(rawAffiliations.join(' ')),
           date: new Date(timeObj.startDate).toISOString().split('T')[0],
           description: description.trim(),
@@ -598,11 +603,17 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
 
     const { bulkWriteArray, changeItems } = await createBulkWriteArray(
       collections.launches,
-      { $or: report.data.map((launchData) => ({ mission: launchData.mission })) },
+      {
+        $or: [
+          ...report.data.map((launchData) => ({ launchId: launchData.launchId })),
+          ...report.data.map((launchData) => ({ launchId: { $exists: false }, mission: launchData.mission })),
+        ],
+      },
       report,
       (currentDbItem: RocketLaunchType) => (
         testDbItem: RocketLaunchType,
-      ) => currentDbItem.mission === testDbItem.mission,
+      ) => (currentDbItem.launchId && currentDbItem.launchId === testDbItem.launchId)
+        || (!currentDbItem.launchId && currentDbItem.mission === testDbItem.mission),
       (dbItem: RocketLaunchType) => ({ mission: dbItem.mission }),
     );
 

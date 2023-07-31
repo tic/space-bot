@@ -71,11 +71,14 @@ export const createBulkWriteArray = async (
       const orderedExistingItem = orderJSON(existingItem || {});
       const changeType = existingItem ? ChangeReportTypeEnum.UPDATED : ChangeReportTypeEnum.NEW;
       if (!existingItem || JSON.stringify(orderedExistingItem) !== JSON.stringify(orderedDbItem)) {
-        changeItems.push({
-          changeType,
-          data: orderedDbItem,
-          originalData: orderedExistingItem as ScrapedDataType,
-        });
+        if (orderedExistingItem.launchId === orderedDbItem.launchId) {
+          changeItems.push({
+            changeType,
+            data: orderedDbItem,
+            originalData: orderedExistingItem as ScrapedDataType,
+          });
+        }
+
         return {
           updateOne: {
             filter: generateUpdateFilter(orderedDbItem),
