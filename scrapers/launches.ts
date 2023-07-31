@@ -464,7 +464,7 @@ const registerInitialLaunchTimeouts = async () => {
       pendingReminders.forEach(async (launchData) => {
         const boosters = launchData.vehicle === 'Falcon 9' || launchData.vehicle === 'Falcon Heavy'
           ? await collections.boosters.find({
-            'assignments.date': unixTimeToBoosterDate(launchData.time.sortDate),
+            'assignments.date': unixTimeToBoosterDate(launchData.time.startDate),
           }).toArray() as Falcon9BoosterType[]
           : [];
         handleLaunchUpdate(launchData, boosters);
@@ -674,7 +674,7 @@ const handleChanges = async (report: ChangeReport) => {
     const oldData = changeItem.originalData as RocketLaunchType;
     const boosters = newData.vehicle === 'Falcon 9' || newData.vehicle === 'Falcon Heavy'
       ? await collections.boosters.find({
-        'assignments.date': unixTimeToBoosterDate(newData.time.sortDate),
+        'assignments.date': unixTimeToBoosterDate(newData.time.startDate),
       }).toArray() as Falcon9BoosterType[]
       : [];
 
