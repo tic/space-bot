@@ -480,74 +480,86 @@ const registerInitialLaunchTimeouts = async () => {
 
 const collect = async () : Promise<RocketLaunchDataReportType> => {
   try {
-    const { data: parsedResult } = await axios.get(config.scrapers.launches.url);
-    const dom = new JSDOM(parsedResult);
-    const cards = dom.window.document.getElementsByClassName('launch');
     const launches: RocketLaunchType[] = [];
+    let page = 1;
+    let isLastPage = false;
 
-    for (let i = 0; i < cards.length; i++) {
-      const card = cards[i];
-      const [vehicle, mission] = card.getElementsByTagName('h5')[0].textContent.split(' | ').map((itme) => itme.trim());
-      if (mission.match(/unknown payload/i)) {
-        continue;
+    while (!isLastPage) {
+      const { data: parsedResult } = await axios.get(`${config.scrapers.launches.url}?page=${page++}`);
+      const dom = new JSDOM(parsedResult);
+      const cards = dom.window.document.getElementsByClassName('launch');
+      if (cards.length < 30 || page > 6) {
+        isLastPage = true;
       }
 
-      const [datetimeRaw, launchSite] = card
-        .getElementsByClassName('mdl-card__supporting-text')[0]
-        .textContent
-        .split('\n')
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const [vehicle, mission] = card
+          .getElementsByTagName('h5')[0]
+          .textContent.split(' | ')
+          .map((itme) => itme.trim());
 
-      const splitPoint = datetimeRaw.search(/\d{4}/);
-      const rawDate = datetimeRaw.substring(0, splitPoint).replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
-      const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
-      const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
-      const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
-
-      const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
-
-      logMessage('scraper_launches', `running subrequest for mission ${mission}`);
-      const { data: parsedDetailsResult } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
-      const detailDom = new JSDOM(parsedDetailsResult);
-
-      const sectionHeaders = detailDom.window.document.getElementsByTagName('h3');
-      let detailSection = null;
-      for (let j = 0; j < sectionHeaders.length; j++) {
-        if (sectionHeaders[j].textContent === 'Mission Details') {
-          detailSection = sectionHeaders[j].nextElementSibling;
-          break;
+        if (mission.match(/unknown payload/i)) {
+          continue;
         }
+
+        const [datetimeRaw, launchSite] = card
+          .getElementsByClassName('mdl-card__supporting-text')[0]
+          .textContent
+          .split('\n')
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0);
+
+        const splitPoint = datetimeRaw.search(/\d{4}/);
+        const rawDate = datetimeRaw.substring(0, splitPoint).replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
+        const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
+        const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
+        const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
+
+        const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
+
+        logMessage('scraper_launches', `running subrequest for mission ${mission}`);
+        const { data: parsedDetailsResult } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
+        const detailDom = new JSDOM(parsedDetailsResult);
+
+        const sectionHeaders = detailDom.window.document.getElementsByTagName('h3');
+        let detailSection = null;
+        for (let j = 0; j < sectionHeaders.length; j++) {
+          if (sectionHeaders[j].textContent === 'Mission Details') {
+            detailSection = sectionHeaders[j].nextElementSibling;
+            break;
+          }
+        }
+
+        let description = '';
+        while (detailSection && detailSection.tagName === 'SECTION') {
+          const header = detailSection.firstElementChild.firstElementChild.textContent;
+          const ps = detailSection.getElementsByTagName('p');
+          let totalStr = '';
+          for (let k = 0; k < ps.length; k++) {
+            totalStr += ps[k].textContent;
+          }
+
+          if (totalStr === '') {
+            totalStr = 'No mission description available.';
+          } else {
+            rawAffiliations.push(totalStr);
+          }
+
+          description += `**${header}**\n${totalStr}\n\n`;
+          detailSection = detailSection.nextSibling;
+        }
+
+        launches.push({
+          affiliations: getAffiliations(rawAffiliations.join(' ')),
+          date: new Date(timeObj.startDate).toISOString().split('T')[0],
+          description: description.trim(),
+          launchSite,
+          mission,
+          time: timeObj,
+          vehicle,
+        });
       }
-
-      let description = '';
-      while (detailSection && detailSection.tagName === 'SECTION') {
-        const header = detailSection.firstElementChild.firstElementChild.textContent;
-        const ps = detailSection.getElementsByTagName('p');
-        let totalStr = '';
-        for (let k = 0; k < ps.length; k++) {
-          totalStr += ps[k].textContent;
-        }
-
-        if (totalStr === '') {
-          totalStr = 'No mission description available.';
-        } else {
-          rawAffiliations.push(totalStr);
-        }
-
-        description += `**${header}**\n${totalStr}\n\n`;
-        detailSection = detailSection.nextSibling;
-      }
-
-      launches.push({
-        affiliations: getAffiliations(rawAffiliations.join(' ')),
-        date: new Date(timeObj.startDate).toISOString().split('T')[0],
-        description: description.trim(),
-        launchSite,
-        mission,
-        time: timeObj,
-        vehicle,
-      });
     }
 
     // Comment this out when working on handling new formats
