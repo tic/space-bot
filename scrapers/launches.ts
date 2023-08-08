@@ -493,94 +493,109 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
       }
 
       for (let i = 0; i < cards.length; i++) {
-        const card = cards[i];
-        const launchId = Array.from(card.classList)
-          .find((className) => className.match(/a\d+/)) || null;
+        try {
+          const card = cards[i];
+          const launchId = Array.from(card.classList)
+            .find((className) => className.match(/a\d+/)) || null;
 
-        const [vehicle, mission] = card
-          .getElementsByTagName('h5')[0]
-          .textContent.split(' | ')
-          .map((itme) => itme.trim());
+          const [vehicle, mission] = card
+            .getElementsByTagName('h5')[0]
+            .textContent.split(' | ')
+            .map((itme) => itme.trim());
 
-        if (mission.match(/unknown payload/i)) {
-          continue;
-        }
-
-        const [datetimeRaw, launchSite] = card
-          .getElementsByClassName('mdl-card__supporting-text')[0]
-          .textContent
-          .split('\n')
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0);
-
-        const splitPoint = datetimeRaw.search(/\d{4}/);
-        let rawDate = datetimeRaw
-          .substring(0, splitPoint)
-          .replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
-
-        if (!rawDate.match(regexps.date.month)) {
-          rawDate = rawDate
-            .replace(/Jan/, 'January')
-            .replace(/Feb/, 'February')
-            .replace(/Mar/, 'March')
-            .replace(/Apr/, 'April')
-            .replace(/Jun/, 'June')
-            .replace(/Jul/, 'July')
-            .replace(/Aug/, 'August')
-            .replace(/Sep/, 'September')
-            .replace(/Oct/, 'October')
-            .replace(/Nov/, 'November')
-            .replace(/Dec/, 'December ');
-        }
-
-        const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
-        const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
-        const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
-
-        const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
-
-        logMessage('scraper_launches', `running subrequest for launch ${launchId} (mission ${mission})`);
-        const { data: parsedDetailsResult } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
-        const detailDom = new JSDOM(parsedDetailsResult);
-
-        const sectionHeaders = detailDom.window.document.getElementsByTagName('h3');
-        let detailSection = null;
-        for (let j = 0; j < sectionHeaders.length; j++) {
-          if (sectionHeaders[j].textContent === 'Mission Details') {
-            detailSection = sectionHeaders[j].nextElementSibling;
-            break;
-          }
-        }
-
-        let description = '';
-        while (detailSection && detailSection.tagName === 'SECTION') {
-          const header = detailSection.firstElementChild.firstElementChild.textContent;
-          const ps = detailSection.getElementsByTagName('p');
-          let totalStr = '';
-          for (let k = 0; k < ps.length; k++) {
-            totalStr += ps[k].textContent;
+          if (mission.match(/unknown payload/i)) {
+            continue;
           }
 
-          if (totalStr === '') {
-            totalStr = 'No mission description available.';
-          } else {
-            rawAffiliations.push(totalStr);
+          const [datetimeRaw, launchSite] = card
+            .getElementsByClassName('mdl-card__supporting-text')[0]
+            .textContent
+            .split('\n')
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+
+          const splitPoint = datetimeRaw.search(/\d{4}/);
+          let rawDate = datetimeRaw
+            .substring(0, splitPoint)
+            .replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
+
+          if (!rawDate.match(regexps.date.month)) {
+            rawDate = rawDate
+              .replace(/Jan/, 'January')
+              .replace(/Feb/, 'February')
+              .replace(/Mar/, 'March')
+              .replace(/Apr/, 'April')
+              .replace(/Jun/, 'June')
+              .replace(/Jul/, 'July')
+              .replace(/Aug/, 'August')
+              .replace(/Sep/, 'September')
+              .replace(/Oct/, 'October')
+              .replace(/Nov/, 'November')
+              .replace(/Dec/, 'December ');
           }
 
-          description += `**${header}**\n${totalStr}\n\n`;
-          detailSection = detailSection.nextSibling;
-        }
+          const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
+          const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
+          const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
 
-        launches.push({
-          launchId,
-          affiliations: getAffiliations(rawAffiliations.join(' ')),
-          date: new Date(timeObj.startDate).toISOString().split('T')[0],
-          description: description.trim(),
-          launchSite,
-          mission,
-          time: timeObj,
-          vehicle,
-        });
+          const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
+
+          logMessage('scraper_launches', `running subrequest for launch ${launchId} (mission ${mission})`);
+          let parsedDetailsResult = null;
+          try {
+            const { data } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
+            parsedDetailsResult = data;
+          } catch (err) {
+            logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+nested', String(err));
+          }
+
+          if (parsedDetailsResult === null) {
+            continue;
+          }
+
+          const detailDom = new JSDOM(parsedDetailsResult);
+
+          const sectionHeaders = detailDom.window.document.getElementsByTagName('h3');
+          let detailSection = null;
+          for (let j = 0; j < sectionHeaders.length; j++) {
+            if (sectionHeaders[j].textContent === 'Mission Details') {
+              detailSection = sectionHeaders[j].nextElementSibling;
+              break;
+            }
+          }
+
+          let description = '';
+          while (detailSection && detailSection.tagName === 'SECTION') {
+            const header = detailSection.firstElementChild.firstElementChild.textContent;
+            const ps = detailSection.getElementsByTagName('p');
+            let totalStr = '';
+            for (let k = 0; k < ps.length; k++) {
+              totalStr += ps[k].textContent;
+            }
+
+            if (totalStr === '') {
+              totalStr = 'No mission description available.';
+            } else {
+              rawAffiliations.push(totalStr);
+            }
+
+            description += `**${header}**\n${totalStr}\n\n`;
+            detailSection = detailSection.nextSibling;
+          }
+
+          launches.push({
+            launchId,
+            affiliations: getAffiliations(rawAffiliations.join(' ')),
+            date: new Date(timeObj.startDate).toISOString().split('T')[0],
+            description: description.trim(),
+            launchSite,
+            mission,
+            time: timeObj,
+            vehicle,
+          });
+        } catch (err) {
+          logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+card_parser', String(err));
+        }
       }
     }
 
