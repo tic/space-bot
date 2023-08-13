@@ -552,7 +552,7 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
                 LogCategoriesEnum.SCRAPE_FAILURE,
                 'scraper_launches+nested',
                 null,
-                `failed subrequest for launch id ${launchId} with status`
+                `failed subrequest for launch id ${launchId} with status `
                 + `${error.response.status} at ${error.response.config.url}`,
               );
             } else {
