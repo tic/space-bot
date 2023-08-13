@@ -38,7 +38,7 @@ const getErrorString = (errorStringIn?: string, errorIn?: Error) => {
 
 // [time]|[log version]|[category]|[source]|[message]
 const logFormat = '%s|%s|%s|%s|%s';
-const logVersion = 'v1.0.0';
+const logVersion = 'v1.0.1';
 
 export const interpretLogLine = (logLine: string) : void => {
   const logPieces = logLine.split('|');
@@ -53,6 +53,19 @@ export const interpretLogLine = (logLine: string) : void => {
         logPieces[2],
         logPieces[3],
         logPieces[4],
+      );
+    }
+  } else if (logPieces[1] === 'v1.0.1') {
+    if (logPieces.length !== 4) {
+      console.log('Incorrectly formatted log message with version v1.0.1');
+    } else {
+      console.log(
+        'Timestamp: %s\nLog version: %s\nCategory: %s\nSource: %s\nMessage: %s',
+        logPieces[0],
+        logPieces[1],
+        logPieces[2],
+        logPieces[3],
+        logPieces[4].replace(/\+>\s+/g, '\n\t'),
       );
     }
   } else {
