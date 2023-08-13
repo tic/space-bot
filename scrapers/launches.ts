@@ -464,7 +464,7 @@ const registerInitialLaunchTimeouts = async () => {
       pendingReminders.forEach(async (launchData) => {
         const boosters = launchData.vehicle === 'Falcon 9' || launchData.vehicle === 'Falcon Heavy'
           ? await collections.boosters.find({
-            assignments: { $elemMatch: { date: unixTimeToBoosterDate(launchData.time.startDate) } },
+            'assignments.date': unixTimeToBoosterDate(launchData.time.startDate),
           }).toArray() as Falcon9BoosterType[]
           : [];
         handleLaunchUpdate(launchData, boosters);
@@ -480,74 +480,123 @@ const registerInitialLaunchTimeouts = async () => {
 
 const collect = async () : Promise<RocketLaunchDataReportType> => {
   try {
-    const { data: parsedResult } = await axios.get(config.scrapers.launches.url);
-    const dom = new JSDOM(parsedResult);
-    const cards = dom.window.document.getElementsByClassName('launch');
     const launches: RocketLaunchType[] = [];
+    let page = 1;
+    let isLastPage = false;
 
-    for (let i = 0; i < cards.length; i++) {
-      const card = cards[i];
-      const [vehicle, mission] = card.getElementsByTagName('h5')[0].textContent.split(' | ').map((itme) => itme.trim());
-      if (mission.match(/unknown payload/i)) {
-        continue;
+    while (!isLastPage) {
+      const { data: parsedResult } = await axios.get(`${config.scrapers.launches.url}?page=${page++}`);
+      const dom = new JSDOM(parsedResult);
+      const cards = dom.window.document.getElementsByClassName('launch');
+      if (cards.length < 30 || page > 6) {
+        isLastPage = true;
       }
 
-      const [datetimeRaw, launchSite] = card
-        .getElementsByClassName('mdl-card__supporting-text')[0]
-        .textContent
-        .split('\n')
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
+      for (let i = 0; i < cards.length; i++) {
+        try {
+          const card = cards[i];
+          const launchId = Array.from(card.classList)
+            .find((className) => className.match(/a\d+/)) || null;
 
-      const splitPoint = datetimeRaw.search(/\d{4}/);
-      const rawDate = datetimeRaw.substring(0, splitPoint).replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
-      const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
-      const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
-      const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
+          const [vehicle, mission] = card
+            .getElementsByTagName('h5')[0]
+            .textContent.split(' | ')
+            .map((itme) => itme.trim());
 
-      const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
+          if (mission.match(/unknown payload/i)) {
+            continue;
+          }
 
-      logMessage('scraper_launches', `running subrequest for mission ${mission}`);
-      const { data: parsedDetailsResult } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
-      const detailDom = new JSDOM(parsedDetailsResult);
+          const [datetimeRaw, launchSite] = card
+            .getElementsByClassName('mdl-card__supporting-text')[0]
+            .textContent
+            .split('\n')
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
 
-      const sectionHeaders = detailDom.window.document.getElementsByTagName('h3');
-      let detailSection = null;
-      for (let j = 0; j < sectionHeaders.length; j++) {
-        if (sectionHeaders[j].textContent === 'Mission Details') {
-          detailSection = sectionHeaders[j].nextElementSibling;
-          break;
+          const splitPoint = datetimeRaw.search(/\d{4}/);
+          let rawDate = datetimeRaw
+            .substring(0, splitPoint)
+            .replace(/(Sun)|(Mon)|(Tue)|(Wed)|(Thu)|(Fri)|(Sat)/, '');
+
+          if (!rawDate.match(regexps.date.month)) {
+            rawDate = rawDate
+              .replace(/Jan/, 'January')
+              .replace(/Feb/, 'February')
+              .replace(/Mar/, 'March')
+              .replace(/Apr/, 'April')
+              .replace(/Jun/, 'June')
+              .replace(/Jul/, 'July')
+              .replace(/Aug/, 'August')
+              .replace(/Sep/, 'September')
+              .replace(/Oct/, 'October')
+              .replace(/Nov/, 'November')
+              .replace(/Dec/, 'December ');
+          }
+
+          const rawTime = datetimeRaw.substring(splitPoint + 4).replace(':', '').trim();
+          const rawAffiliations = [card.getElementsByTagName('span')[0].textContent.trim()];
+          const timeObj = stringToTimeObject(rawDate, rawTime || 'TBD');
+
+          const detailsUrl = card.getElementsByTagName('button')[0].getAttribute('onclick').slice(27, -1);
+
+          logMessage('scraper_launches', `running subrequest for launch ${launchId} (mission ${mission})`);
+          let parsedDetailsResult = null;
+          try {
+            const { data } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
+            parsedDetailsResult = data;
+          } catch (err) {
+            logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+nested', String(err));
+          }
+
+          if (parsedDetailsResult === null) {
+            continue;
+          }
+
+          const detailDom = new JSDOM(parsedDetailsResult);
+
+          const sectionHeaders = detailDom.window.document.getElementsByTagName('h3');
+          let detailSection = null;
+          for (let j = 0; j < sectionHeaders.length; j++) {
+            if (sectionHeaders[j].textContent === 'Mission Details') {
+              detailSection = sectionHeaders[j].nextElementSibling;
+              break;
+            }
+          }
+
+          let description = '';
+          while (detailSection && detailSection.tagName === 'SECTION') {
+            const header = detailSection.firstElementChild.firstElementChild.textContent;
+            const ps = detailSection.getElementsByTagName('p');
+            let totalStr = '';
+            for (let k = 0; k < ps.length; k++) {
+              totalStr += ps[k].textContent;
+            }
+
+            if (totalStr === '') {
+              totalStr = 'No mission description available.';
+            } else {
+              rawAffiliations.push(totalStr);
+            }
+
+            description += `**${header}**\n${totalStr}\n\n`;
+            detailSection = detailSection.nextSibling;
+          }
+
+          launches.push({
+            launchId,
+            affiliations: getAffiliations(rawAffiliations.join(' ')),
+            date: new Date(timeObj.startDate).toISOString().split('T')[0],
+            description: description.trim(),
+            launchSite,
+            mission,
+            time: timeObj,
+            vehicle,
+          });
+        } catch (err) {
+          logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+card_parser', String(err));
         }
       }
-
-      let description = '';
-      while (detailSection && detailSection.tagName === 'SECTION') {
-        const header = detailSection.firstElementChild.firstElementChild.textContent;
-        const ps = detailSection.getElementsByTagName('p');
-        let totalStr = '';
-        for (let k = 0; k < ps.length; k++) {
-          totalStr += ps[k].textContent;
-        }
-
-        if (totalStr === '') {
-          totalStr = 'No mission description available.';
-        } else {
-          rawAffiliations.push(totalStr);
-        }
-
-        description += `**${header}**\n${totalStr}\n\n`;
-        detailSection = detailSection.nextSibling;
-      }
-
-      launches.push({
-        affiliations: getAffiliations(rawAffiliations.join(' ')),
-        date: new Date(timeObj.startDate).toISOString().split('T')[0],
-        description: description.trim(),
-        launchSite,
-        mission,
-        time: timeObj,
-        vehicle,
-      });
     }
 
     // Comment this out when working on handling new formats
@@ -586,11 +635,17 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
 
     const { bulkWriteArray, changeItems } = await createBulkWriteArray(
       collections.launches,
-      { $or: report.data.map((launchData) => ({ mission: launchData.mission })) },
+      {
+        $or: [
+          ...report.data.map((launchData) => ({ launchId: launchData.launchId })),
+          ...report.data.map((launchData) => ({ launchId: { $exists: false }, mission: launchData.mission })),
+        ],
+      },
       report,
       (currentDbItem: RocketLaunchType) => (
         testDbItem: RocketLaunchType,
-      ) => currentDbItem.mission === testDbItem.mission,
+      ) => (currentDbItem.launchId && currentDbItem.launchId === testDbItem.launchId)
+        || (!currentDbItem.launchId && currentDbItem.mission === testDbItem.mission),
       (dbItem: RocketLaunchType) => ({ mission: dbItem.mission }),
     );
 
@@ -633,7 +688,7 @@ const handleChanges = async (report: ChangeReport) => {
     const oldData = changeItem.originalData as RocketLaunchType;
     const boosters = newData.vehicle === 'Falcon 9' || newData.vehicle === 'Falcon Heavy'
       ? await collections.boosters.find({
-        assignments: { $elemMatch: { date: unixTimeToBoosterDate(newData.time.startDate) } },
+        'assignments.date': unixTimeToBoosterDate(newData.time.startDate),
       }).toArray() as Falcon9BoosterType[]
       : [];
 
