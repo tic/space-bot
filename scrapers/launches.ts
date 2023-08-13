@@ -488,6 +488,7 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
       const { data: parsedResult } = await axios.get(`${config.scrapers.launches.url}?page=${page++}`);
       const dom = new JSDOM(parsedResult);
       const cards = dom.window.document.getElementsByClassName('launch');
+
       if (cards.length < 30 || page > 6) {
         isLastPage = true;
       }
@@ -625,6 +626,7 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
       changes: null,
     };
   }
+
   try {
     if (report.data.length === 0) {
       return {
@@ -636,17 +638,13 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
     const { bulkWriteArray, changeItems } = await createBulkWriteArray(
       collections.launches,
       {
-        $or: [
-          ...report.data.map((launchData) => ({ launchId: launchData.launchId })),
-          ...report.data.map((launchData) => ({ launchId: { $exists: false }, mission: launchData.mission })),
-        ],
+        $or: report.data.map((launchData) => ({ launchId: launchData.launchId })),
       },
       report,
       (currentDbItem: RocketLaunchType) => (
         testDbItem: RocketLaunchType,
-      ) => (currentDbItem.launchId && currentDbItem.launchId === testDbItem.launchId)
-        || (!currentDbItem.launchId && currentDbItem.mission === testDbItem.mission),
-      (dbItem: RocketLaunchType) => ({ mission: dbItem.mission }),
+      ) => (currentDbItem.launchId && currentDbItem.launchId === testDbItem.launchId),
+      (dbItem: RocketLaunchType) => ({ launchId: dbItem.launchId }),
     );
 
     if (bulkWriteArray.length === 0) {
@@ -661,6 +659,7 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
       return {
         success: false,
         changes: null,
+        message: `write checksum failed! ${result.nUpserted} + ${result.nModified} != ${bulkWriteArray.length}`,
       };
     }
 
