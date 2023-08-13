@@ -1,5 +1,5 @@
 /* eslint-disable no-await-in-loop */
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import {
   EmbedAuthorData,
   MessageEmbed,
@@ -547,7 +547,17 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
             const { data } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
             parsedDetailsResult = data;
           } catch (error) {
-            logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+nested', error);
+            if (error instanceof AxiosError) {
+              logError(
+                LogCategoriesEnum.SCRAPE_FAILURE,
+                'scraper_launches+nested',
+                null,
+                `failed subrequest for launch id ${launchId} with status`
+                + `${error.response.status} at ${error.response.config.url}`,
+              );
+            } else {
+              logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+nested', error);
+            }
           }
 
           if (parsedDetailsResult === null) {
@@ -611,7 +621,16 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
       data: launches,
     };
   } catch (error) {
-    logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+main', error);
+    if (error instanceof AxiosError) {
+      logError(
+        LogCategoriesEnum.SCRAPE_FAILURE,
+        'scraper_launches+nested',
+        null,
+        `failed top-level launch request with status ${error.response.status} at ${error.response.config.url}`,
+      );
+    } else {
+      logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+main', error);
+    }
     return {
       success: false,
       data: null,
