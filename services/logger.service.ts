@@ -55,7 +55,7 @@ export const logError = async (category: LogCategoriesEnum, source: string, mess
   return new Promise((resolve) => {
     appendFile(
       `./logs/${timeStr.substring(0, 7)}.spacebotlog.txt`,
-      assembledMessage,
+      `${assembledMessage}\n`,
       (error) => {
         resolve(error === null);
       },
@@ -75,7 +75,7 @@ export const logMessage = async (source: string, message: string) : Promise<bool
   return new Promise((resolve) => {
     appendFile(
       `./logs/${timeStr.substring(0, 7)}.spacebotlog.txt`,
-      assembledMessage,
+      `${assembledMessage}\n`,
       (error) => {
         resolve(error === null);
       },
