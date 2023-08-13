@@ -92,7 +92,7 @@ export const initialize = () => {
         try {
           message.channel.send(`Unable to generate active timeouts report:\n${String(err0)}`);
         } catch (err1) {
-          logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'command response', String(err1));
+          logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'command response', err1);
         }
       }
     }

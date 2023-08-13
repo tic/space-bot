@@ -28,7 +28,7 @@ export const wrapScraperHandler = (
   const changeReport = await controller.mergeToDatabase(dataReport);
 
   if (changeReport.success === false) {
-    logError(LogCategoriesEnum.DB_MERGE_FAILURE, identifier, changeReport.message);
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, identifier, changeReport.error, changeReport.message);
     return;
   }
   // The scraper controller needs to handle the change report

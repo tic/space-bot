@@ -218,7 +218,7 @@ const mergeToDatabase = async (report: NotamDataReportType) : Promise<ChangeRepo
       changes: changeItems,
     };
   } catch (error) {
-    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_notams', String(error));
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_notams', error);
     return {
       success: false,
       changes: null,
@@ -322,7 +322,7 @@ const handleChanges = async (report: ChangeReport) => {
       [],
     );
     if (result === false) {
-      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_launches', 'failed to announce launch update');
+      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_launches', null, 'failed to announce launch update');
     }
   });
   removedOnLastRun.forEach(async (notam) => {
@@ -368,7 +368,7 @@ const handleChanges = async (report: ChangeReport) => {
       ['NOTAM'],
     );
     if (result === false) {
-      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_notams', 'failed to announce notam update');
+      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_notams', null, 'failed to announce notam update');
     }
   });
 };

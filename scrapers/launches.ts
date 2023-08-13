@@ -472,7 +472,7 @@ const registerInitialLaunchTimeouts = async () => {
     }
     logMessage(config.scrapers.launches.identifier, 'existing timeouts registered');
   } catch (error) {
-    logError(LogCategoriesEnum.STATUS_LOG, config.scrapers.launches.identifier, String(error));
+    logError(LogCategoriesEnum.STATUS_LOG, config.scrapers.launches.identifier, error);
   } finally {
     release();
   }
@@ -546,8 +546,8 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
           try {
             const { data } = await axios.get(`${config.scrapers.launches.url}${detailsUrl}`);
             parsedDetailsResult = data;
-          } catch (err) {
-            logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+nested', String(err));
+          } catch (error) {
+            logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+nested', error);
           }
 
           if (parsedDetailsResult === null) {
@@ -594,8 +594,8 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
             time: timeObj,
             vehicle,
           });
-        } catch (err) {
-          logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+card_parser', String(err));
+        } catch (error) {
+          logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+card_parser', error);
         }
       }
     }
@@ -611,7 +611,7 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
       data: launches,
     };
   } catch (error) {
-    console.error(error);
+    logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+main', error);
     return {
       success: false,
       data: null,
@@ -668,7 +668,7 @@ const mergeToDatabase = async (report: RocketLaunchDataReportType) : Promise<Cha
       changes: changeItems,
     };
   } catch (error) {
-    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_launches', String(error));
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_launches', error);
     return {
       success: false,
       changes: null,
@@ -779,7 +779,7 @@ const handleChanges = async (report: ChangeReport) => {
       ['LAUNCH'].concat(newData.affiliations),
     );
     if (result === false) {
-      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_launches', 'failed to announce launch update');
+      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_launches', null, 'failed to announce launch update');
     }
   }));
 };

@@ -103,7 +103,7 @@ export const createBulkWriteArray = async (
       changeItems,
     };
   } catch (error) {
-    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'database_createBulkWriteArray', String(error));
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'database_createBulkWriteArray', error);
     return {
       bulkWriteArray: [],
       changeItems: [],

@@ -135,7 +135,7 @@ const mergeToDatabase = async (report: WeatherDataReportType) : Promise<ChangeRe
       }],
     };
   } catch (error) {
-    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_weather', String(error));
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_weather', error);
     return {
       success: false,
       changes: null,
@@ -248,7 +248,7 @@ const handleChanges = async (report: ChangeReport) => {
     //   [],
     // );
     // if (result === false) {
-    //   logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_weather', 'failed to announce weather update');
+    //   logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_weather', null, 'failed to announce weather update');
     // }
   });
 };

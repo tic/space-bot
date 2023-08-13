@@ -44,7 +44,7 @@ app.get('/calendar-data', async (req, res) => {
 
     res.json({ success: true, launches: launchData });
   } catch (error) {
-    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, error);
     res.json({ success: false });
   }
 });
@@ -53,7 +53,7 @@ app.get('/calendar', async (req, res) => {
   try {
     res.render('calendar', { hideDiscord: true });
   } catch (error) {
-    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, error);
     res.render('calendar', {});
   }
 });
@@ -83,7 +83,7 @@ app.get('/', async (req, res) => {
       notams,
     });
   } catch (error) {
-    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, error);
     res.render('today', {
       title: 'Today\'s Activities | Starbase',
       weather: {
@@ -108,7 +108,7 @@ app.get('/notams', async (req, res) => {
       notams: notams || [],
     });
   } catch (error) {
-    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, error);
     res.render('notams', {
       title: 'TFRs | Starbase',
       notams: [],
@@ -165,7 +165,7 @@ app.get('/launches', async (req, res) => {
       })),
     });
   } catch (error) {
-    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, String(error));
+    logError(LogCategoriesEnum.WEB_ERROR, config.web.identifier, error);
     res.render('launches', {
       title: 'Upcoming Launches',
       undecided: [],

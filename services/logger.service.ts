@@ -19,6 +19,23 @@ const getTimeString = () : string => {
   }`;
 };
 
+const getErrorString = (errorStringIn?: string, errorIn?: Error) => {
+  const pieces = [];
+  if (errorStringIn) {
+    pieces.push(`message: ${errorStringIn}`);
+  }
+
+  if (errorIn) {
+    pieces.push(`trace: ${errorIn.stack.replace(/\n/g, '+>')}`);
+  }
+
+  if (pieces.length === 2) {
+    return pieces.join('. ');
+  }
+
+  return pieces[0] || '';
+};
+
 // [time]|[log version]|[category]|[source]|[message]
 const logFormat = '%s|%s|%s|%s|%s';
 const logVersion = 'v1.0.0';
@@ -43,21 +60,29 @@ export const interpretLogLine = (logLine: string) : void => {
   }
 };
 
-export const logError = async (category: LogCategoriesEnum, source: string, message?: string) : Promise<boolean> => {
+export const logError = async (
+  category: LogCategoriesEnum,
+  source: string,
+  errorIn?: Error,
+  errorStringIn?: string,
+) : Promise<boolean> => {
   const timeStr = getTimeString();
-  const assembledMessage = [timeStr,
+  const assembledMessage = [
+    timeStr,
     logVersion,
     category,
     source,
-    message || '',
-  ].reduce((msg, content) => msg.replace('%s', content), logFormat);
+    getErrorString(errorStringIn, errorIn),
+  ]
+    .reduce((msg, content) => msg.replace('%s', content), logFormat);
+
   console.log(assembledMessage);
   return new Promise((resolve) => {
     appendFile(
       `./logs/${timeStr.substring(0, 7)}.spacebotlog.txt`,
       `${assembledMessage}\n`,
-      (error) => {
-        resolve(error === null);
+      (writeErr) => {
+        resolve(writeErr === null);
       },
     );
   });
@@ -65,19 +90,22 @@ export const logError = async (category: LogCategoriesEnum, source: string, mess
 
 export const logMessage = async (source: string, message: string) : Promise<boolean> => {
   const timeStr = getTimeString();
-  const assembledMessage = [timeStr,
+  const assembledMessage = [
+    timeStr,
     logVersion,
     LogCategoriesEnum.STATUS_LOG,
     source,
     message || '',
-  ].reduce((msg, content) => msg.replace('%s', content), logFormat);
+  ]
+    .reduce((msg, content) => msg.replace('%s', content), logFormat);
+
   console.log(assembledMessage);
   return new Promise((resolve) => {
     appendFile(
       `./logs/${timeStr.substring(0, 7)}.spacebotlog.txt`,
       `${assembledMessage}\n`,
-      (error) => {
-        resolve(error === null);
+      (writeErr) => {
+        resolve(writeErr === null);
       },
     );
   });

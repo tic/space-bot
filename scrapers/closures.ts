@@ -179,7 +179,7 @@ const mergeToDatabase = async (report: ClosureDataReportType) : Promise<ChangeRe
       changes: changeItems,
     };
   } catch (error) {
-    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_closure', String(error));
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_closure', error);
     return {
       success: false,
       changes: null,
@@ -277,8 +277,9 @@ const handleChanges = async (report: ChangeReport) => {
       embed,
       ['CLOSURE'],
     );
+
     if (result === false) {
-      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_closures', 'failed to announce closures update');
+      logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_closures', null, 'failed to announce closures update');
     }
   });
 };

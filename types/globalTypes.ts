@@ -23,6 +23,7 @@ export type ChangeItemType = {
 export type ChangeReport = {
   success: boolean,
   changes: null | ChangeItemType[],
+  error?: Error,
   message?: string,
 };
 

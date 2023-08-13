@@ -198,7 +198,7 @@ const mergeToDatabase = async (report: BoosterDataReportType) : Promise<ChangeRe
       changes: changeItems,
     };
   } catch (error) {
-    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_booster', String(error));
+    logError(LogCategoriesEnum.DB_MERGE_FAILURE, 'scraper_booster', error);
     return {
       success: false,
       changes: null,
