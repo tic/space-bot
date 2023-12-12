@@ -704,6 +704,12 @@ const handleChanges = async (report: ChangeReport) => {
   await Promise.all(report.changes.map(async (changeItem) => {
     const newData = changeItem.data as RocketLaunchType;
     const oldData = changeItem.originalData as RocketLaunchType;
+
+    // Skip announcements for stuff in the past
+    if (newData.time.startDate < Date.now()) {
+      return;
+    }
+
     const boosters = newData.vehicle === 'Falcon 9' || newData.vehicle === 'Falcon Heavy'
       ? await collections.boosters.find({
         'assignments.date': unixTimeToBoosterDate(newData.time.startDate),
@@ -797,6 +803,7 @@ const handleChanges = async (report: ChangeReport) => {
       embed,
       ['LAUNCH'].concat(newData.affiliations),
     );
+
     if (result === false) {
       logError(LogCategoriesEnum.ANNOUNCE_FAILURE, 'scraper_launches', null, 'failed to announce launch update');
     }

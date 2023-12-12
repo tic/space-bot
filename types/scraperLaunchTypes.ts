@@ -79,10 +79,11 @@ export const quarterToMonth: Record<string, number> = {
 
 export const regexps = {
   date: {
-    abbreviatedMonthAndDay: /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Oct|Nov|Dec)\.? (\d\d?)/i,
-    fullMonthAndDay: /(January|February|March|April|May|June|July|August|September|October|November|December) (\d\d?)/i,
+    abbreviatedMonthAndDay: /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Oct|Nov|Dec)\.? +(\d\d?)/i,
+    // eslint-disable-next-line max-len
+    fullMonthAndDay: /(January|February|March|April|May|June|July|August|September|October|November|December) +(\d\d?)/i,
     month: /(January|February|March|April|May|June|July|August|September|October|November|December)/i,
-    quarter: /(1st|2nd|3rd|4th) Quarter/i,
+    quarter: /(1st|2nd|3rd|4th) +Quarter/i,
     season: /(Spring|Summer|Fall|Winter)/i,
     year: /.+[ -](\d{4})/,
   },
