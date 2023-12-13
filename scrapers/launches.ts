@@ -737,7 +737,7 @@ const handleChanges = async (report: ChangeReport) => {
       return;
     }
 
-    const boosters = newData.vehicle === 'Falcon 9' || newData.vehicle === 'Falcon Heavy'
+    const boosters = newData.vehicle === 'Falcon 9 Block 5' || newData.vehicle === 'Falcon Heavy'
       ? await collections.boosters.find({
         'assignments.date': unixTimeToBoosterDate(newData.time.startDate),
       }).toArray() as Falcon9BoosterType[]
