@@ -41,6 +41,17 @@ import { ChannelClassEnum } from '../types/serviceDiscordTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
 const stringToTimeObject = (rawDate: string, rawTime: string) => {
+  // I'm currently using a method to increment the year if we find a time
+  // that corresponds to a month that was before the current month. For
+  // instance, if we find a launch in March during a scrape in September.
+  // The current logic is to increment the year by 1 in this situation.
+  // This DOES NOT always get the right year. For example, if we process
+  // a launch for January 2026 in April 2024, we'd store Jan 2025 as the
+  // launch date. This doesn't really matter though since we don't care
+  // about exact correctness until we're closer to the launch date, and
+  // once we get within a year it will always be updated correctly. This
+  // could be a problem if a launch was on just the wrong leap day. I'll
+  // fix it later, probably if/when it breaks. :)
   try {
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -79,6 +90,10 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
 
       month = abbreviatedMonths.indexOf(result[1].toUpperCase());
       day = parseInt(result[2], 10);
+      if (month < currentMonth) {
+        year++;
+      }
+
       timeType = RocketLaunchTimeType.ESTIMATED;
     } else if (rawDate.match(regexps.date.fullMonthAndDay)) {
       const result = rawDate.match(regexps.date.fullMonthAndDay);
@@ -87,6 +102,10 @@ const stringToTimeObject = (rawDate: string, rawTime: string) => {
       }
 
       month = fullMonths.indexOf(result[1].toUpperCase());
+      if (month < currentMonth) {
+        year++;
+      }
+
       day = parseInt(result[2], 10);
       timeType = RocketLaunchTimeType.ESTIMATED;
     } else if (rawDate.match(regexps.date.month)) {
