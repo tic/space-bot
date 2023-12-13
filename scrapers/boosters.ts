@@ -16,60 +16,93 @@ import {
   ChangeReport,
   ScraperControllerType,
 } from '../types/globalTypes';
-import { BoosterDataReportType, StringToLandingLocation } from '../types/scraperBoosterTypes';
+import {
+  BoosterDataReportType,
+  ColumnName,
+  RawAssignmentType,
+  StringToLandingLocation,
+  columnOrder,
+  defaultBooster,
+} from '../types/scraperBoosterTypes';
 import { LogCategoriesEnum } from '../types/serviceLoggerTypes';
 
-type ColumnName = 'boosterSN'
-  | 'boosterType'
-  | 'launches'
-  | 'launchDate'
-  | 'flightDesignation'
-  | 'turnaroundTime'
-  | 'payload'
-  | 'launchDetails'
-  | 'recoveryDetails'
-  | 'status';
+const processRawAssignment = (rawAssignment: RawAssignmentType, index: number) => {
+  const [launchStatus, rawLaunchLocation] = (rawAssignment.launchDetails as string).split(' ');
+  const launchLocationPieces = (rawLaunchLocation || '').match(/\(([^()]*)\)/) || [];
+  let cleanLocation = 'Unknown';
+  if (launchLocationPieces.length === 2) {
+    if (['4E', '39A', '40'].includes(launchLocationPieces[1])) {
+      cleanLocation = `LC-${launchLocationPieces[1]}`;
+    } else {
+      cleanLocation = `${launchLocationPieces[1]}`;
+    }
+  }
 
-const columnOrder: ColumnName[] = [
-  'boosterSN',
-  'boosterType',
-  'launches',
-  'launchDate',
-  'flightDesignation',
-  'turnaroundTime',
-  'payload',
-  'launchDetails',
-  'recoveryDetails',
-  'status',
-];
-const defaultBooster = {
-  boosterSN: null,
-  boosterType: null,
-  flightDesignation: null,
-  launchDate: null,
-  launchDetails: null,
-  launches: null,
-  turnaroundTime: null,
-  payload: null,
-  recoveryDetails: null,
-  status: null,
+  const assignment: Falcon9Assignment = {
+    boosterFlightNumber: index + 1,
+    date: rawAssignment.launchDate as string,
+    flightDesignation: rawAssignment.flightDesignation as string,
+    launchDetails: {
+      location: cleanLocation,
+      status: launchStatus,
+    },
+    turnaroundTime: rawAssignment.turnaroundTime as string,
+    recoveryDetails: {
+      attempted:
+        rawAssignment.recoveryDetails?.indexOf('No attempt') === -1
+        && rawAssignment.recoveryDetails?.indexOf('Not yet known') === -1,
+      location: null,
+      status: null,
+    },
+  };
+
+  if (assignment.recoveryDetails.attempted && rawAssignment.recoveryDetails) {
+    const [recoveryStatus, rawRecoveryLocation] = rawAssignment.recoveryDetails.split(' ');
+    const recoveryLocationPieces = (rawRecoveryLocation || '').match(/\(([^()]*)\)/) || [];
+
+    if (recoveryLocationPieces.length === 2) {
+      const recoveryLocation = StringToLandingLocation[recoveryLocationPieces[1]]
+        || StringToLandingLocation.UNKNOWN;
+      assignment.recoveryDetails.status = recoveryStatus;
+      assignment.recoveryDetails.location = recoveryLocation;
+    }
+  }
+
+  return assignment;
 };
+
+const getRelevantAssignmentFinder = (boosterSN: string) => (rawAssignment: RawAssignmentType) => (
+  rawAssignment.boosterSN === boosterSN
+  && rawAssignment.boosterType !== null
+  && rawAssignment.flightDesignation !== null
+  && rawAssignment.launchDate !== null
+  && rawAssignment.launchDetails !== null
+  && rawAssignment.recoveryDetails !== null
+  && rawAssignment.status !== null
+  && rawAssignment.turnaroundTime !== null
+);
 
 const collect = async () : Promise<BoosterDataReportType> => {
   try {
     const { data: parsedResult } = await axios.get(config.scrapers.boosters.url);
     const dom = new JSDOM(parsedResult);
     const tables = dom.window.document.getElementsByClassName('wikitable');
-    if (tables.length !== 3) {
+    console.log(tables.length);
+    if (tables.length !== 4) {
       throw new Error('Unexpected table count in booster scraper');
     }
-    const blockFiveTableRows = tables[2].getElementsByTagName('tr');
-    if (blockFiveTableRows.length < 2) {
+
+    const inactiveBlockFiveTableRows = tables[2].getElementsByTagName('tr');
+    const activeBlockFiveTableRows = tables[3].getElementsByTagName('tr');
+    const blockFiveTableRows = Array.from(inactiveBlockFiveTableRows).concat(Array.from(activeBlockFiveTableRows));
+    if (blockFiveTableRows.length < 4) {
       throw new Error('Unexpectedly small table in booster scraper');
     }
+
     const allAssignments: Record<ColumnName, string | null>[] = [
       ...new Array(blockFiveTableRows.length - 1),
     ].map(() => ({ ...defaultBooster }));
+
     for (let i = 0; i < allAssignments.length; i++) {
       const tableRow = blockFiveTableRows[i + 1];
       const dataBlobs = tableRow.getElementsByTagName('td');
@@ -89,60 +122,27 @@ const collect = async () : Promise<BoosterDataReportType> => {
         }
       }
     }
+
     const boosterSNs: string[] = Array.from(
       new Set(allAssignments.map((assignment) => assignment.boosterSN)),
     ).filter((boosterSN) => boosterSN !== null) as string[];
+
     const boosterObjects: Falcon9BoosterType[] = boosterSNs.map((boosterSN) => {
-      const rawAssignments = allAssignments.filter((rawAssignment) => (
-        rawAssignment.boosterSN === boosterSN
-        && rawAssignment.boosterType !== null
-        && rawAssignment.flightDesignation !== null
-        && rawAssignment.launchDate !== null
-        && rawAssignment.launchDetails !== null
-        && rawAssignment.recoveryDetails !== null
-        && rawAssignment.status !== null
-        && rawAssignment.turnaroundTime !== null
-      ));
+      const rawAssignments = allAssignments.filter(getRelevantAssignmentFinder(boosterSN));
       const mostRecentAssignment = rawAssignments[rawAssignments.length - 1];
+      const assignments = rawAssignments.map(processRawAssignment);
+      const mostRecentClassification = f9BoosterClassificationMap[mostRecentAssignment.boosterType];
+
+      console.log(boosterSN);
+      console.log(assignments);
       return {
         boosterSN,
-        assignments: rawAssignments.map((rawAssignment, index) => {
-          const [launchStatus, launchLocation] = (rawAssignment.launchDetails as string).split(' ');
-          const assignment: Falcon9Assignment = {
-            boosterFlightNumber: index + 1,
-            date: rawAssignment.launchDate as string,
-            flightDesignation: rawAssignment.flightDesignation as string,
-            launchDetails: {
-              location: launchLocation,
-              status: launchStatus,
-            },
-            turnaroundTime: rawAssignment.turnaroundTime as string,
-            recoveryDetails: {
-              attempted:
-                rawAssignment.recoveryDetails?.indexOf('No attempt') === -1
-                && rawAssignment.recoveryDetails?.indexOf('Not yet known') === -1,
-              location: null,
-              status: null,
-            },
-          };
-          if (assignment.recoveryDetails.attempted && rawAssignment.recoveryDetails) {
-            const [recoveryStatus, rawRecoveryLocation] = rawAssignment.recoveryDetails.split(' ');
-            const recoveryLocationPieces = rawRecoveryLocation.match(/\(([^()]*)\)/);
-            if (recoveryLocationPieces.length === 2) {
-              const recoveryLocation = StringToLandingLocation[recoveryLocationPieces[1]]
-                || StringToLandingLocation.UNKNOWN;
-              assignment.recoveryDetails.status = recoveryStatus;
-              assignment.recoveryDetails.location = recoveryLocation;
-            }
-          }
-          return assignment;
-        }),
-        currentClassification: f9BoosterClassificationMap[
-          mostRecentAssignment.boosterType as string
-        ] || F9BoosterClassificationType.UNKNOWN,
-        status: mostRecentAssignment.status as string,
+        assignments,
+        currentClassification: mostRecentClassification || F9BoosterClassificationType.UNKNOWN,
+        status: mostRecentAssignment.status,
       };
     });
+
     return {
       success: true,
       data: boosterObjects,

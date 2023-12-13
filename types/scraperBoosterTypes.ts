@@ -3,9 +3,48 @@
 import { F9BoosterClassificationType, Falcon9BoosterType } from './databaseModels';
 import { ScrapedDataReportType } from './globalTypes';
 
+export type ColumnName = 'boosterSN'
+  | 'boosterType'
+  | 'launches'
+  | 'launchDate'
+  | 'flightDesignation'
+  | 'turnaroundTime'
+  | 'payload'
+  | 'launchDetails'
+  | 'recoveryDetails'
+  | 'status';
+
+export const columnOrder: ColumnName[] = [
+  'boosterSN',
+  'boosterType',
+  'launches',
+  'launchDate',
+  'flightDesignation',
+  'turnaroundTime',
+  'payload',
+  'launchDetails',
+  'recoveryDetails',
+  'status',
+];
+
+export const defaultBooster = {
+  boosterSN: null,
+  boosterType: null,
+  flightDesignation: null,
+  launchDate: null,
+  launchDetails: null,
+  launches: null,
+  turnaroundTime: null,
+  payload: null,
+  recoveryDetails: null,
+  status: null,
+};
+
 export interface BoosterDataReportType extends ScrapedDataReportType {
   data: Falcon9BoosterType[] | null,
 };
+
+export type RawAssignmentType = Record<ColumnName, string | null>;
 
 export const BoosterTypeToString: Record<F9BoosterClassificationType, string> = {
   [F9BoosterClassificationType.FALCON_9]: 'Standard booster',
@@ -22,7 +61,7 @@ export enum LandingLocationEnum {
   LZ_2 = 'Landing Zone 2',
   LZ_4 = 'Landing Zone 4',
   UNKNOWN_DRONESHIP = 'TBD Autonomous Droneship',
-  UNKNOWN = 'Unknown landing location',
+  UNKNOWN = 'Unknown',
 };
 
 export const StringToLandingLocation: Record<string, LandingLocationEnum> = {
