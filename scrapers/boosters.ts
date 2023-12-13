@@ -87,7 +87,7 @@ const collect = async () : Promise<BoosterDataReportType> => {
     const { data: parsedResult } = await axios.get(config.scrapers.boosters.url);
     const dom = new JSDOM(parsedResult);
     const tables = dom.window.document.getElementsByClassName('wikitable');
-    console.log(tables.length);
+
     if (tables.length !== 4) {
       throw new Error('Unexpected table count in booster scraper');
     }
@@ -95,6 +95,7 @@ const collect = async () : Promise<BoosterDataReportType> => {
     const inactiveBlockFiveTableRows = tables[2].getElementsByTagName('tr');
     const activeBlockFiveTableRows = tables[3].getElementsByTagName('tr');
     const blockFiveTableRows = Array.from(inactiveBlockFiveTableRows).concat(Array.from(activeBlockFiveTableRows));
+
     if (blockFiveTableRows.length < 4) {
       throw new Error('Unexpectedly small table in booster scraper');
     }
@@ -107,17 +108,21 @@ const collect = async () : Promise<BoosterDataReportType> => {
       const tableRow = blockFiveTableRows[i + 1];
       const dataBlobs = tableRow.getElementsByTagName('td');
       let blobNumber = 0;
+
       for (let j = 0; j < columnOrder.length; j++) {
         const columnName = columnOrder[j];
+
         if (allAssignments[i][columnName] === null) {
           const currentBlob = dataBlobs[blobNumber];
           if (!currentBlob) {
             continue;
           }
+
           const affectedRowCount = parseInt(currentBlob.getAttribute('rowspan') || '1', 10);
           for (let k = 0; k < affectedRowCount; k++) {
             allAssignments[i + k][columnName] = currentBlob.textContent?.trim().replace(/\[.*\]/, '') || null;
           }
+
           blobNumber++;
         }
       }
@@ -133,8 +138,6 @@ const collect = async () : Promise<BoosterDataReportType> => {
       const assignments = rawAssignments.map(processRawAssignment);
       const mostRecentClassification = f9BoosterClassificationMap[mostRecentAssignment.boosterType];
 
-      console.log(boosterSN);
-      console.log(assignments);
       return {
         boosterSN,
         assignments,
