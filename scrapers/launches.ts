@@ -710,6 +710,14 @@ const handleChanges = async (report: ChangeReport) => {
       return;
     }
 
+    // Skip updates if the time has shifted by less than 5 minutes
+    if (
+      changeItem.changeType === ChangeReportTypeEnum.UPDATED
+      && Math.abs(newData.time.startDate - oldData.time.startDate) < 300000
+    ) {
+      return;
+    }
+
     const boosters = newData.vehicle === 'Falcon 9' || newData.vehicle === 'Falcon Heavy'
       ? await collections.boosters.find({
         'assignments.date': unixTimeToBoosterDate(newData.time.startDate),
