@@ -645,7 +645,7 @@ const collect = async () : Promise<RocketLaunchDataReportType> => {
         LogCategoriesEnum.SCRAPE_FAILURE,
         'scraper_launches+nested',
         null,
-        `failed top-level launch request with status ${error.response.status} at ${error.response.config.url}`,
+        `failed top-level launch request with status ${error?.response?.status} at ${error?.response?.config?.url}`,
       );
     } else {
       logError(LogCategoriesEnum.SCRAPE_FAILURE, 'scraper_launches+main', error);
